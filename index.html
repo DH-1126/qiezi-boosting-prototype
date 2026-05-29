@@ -484,12 +484,39 @@ function rHome(){
 }
 
 // ── 结算/提现弹窗（全局） ──
+function switchSettleMethod(m){
+  var bank=document.getElementById('settle-bank-section');
+  var alipay=document.getElementById('settle-alipay-section');
+  var labels=document.querySelectorAll('#settleMethodGroup .radio-item');
+  labels.forEach(function(el){el.classList.remove('active');});
+  if(m==='bank'){
+    bank.style.display='block';alipay.style.display='none';
+    labels[0].classList.add('active');
+  }else{
+    bank.style.display='none';alipay.style.display='block';
+    labels[1].classList.add('active');
+  }
+}
 function openGuildSettle(){
   var body='<div class="ant-form-item"><div class="ant-form-label">工会名称</div><input class="ant-input" value="三角洲工会A组" readonly style="background:var(--bg);"></div>'+
+    '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>结算方式</div>'+
+    '<div class="radio-group" id="settleMethodGroup">'+
+    '<label class="radio-item active" onclick="switchSettleMethod(\'bank\')">银行卡结算</label>'+
+    '<label class="radio-item" onclick="switchSettleMethod(\'alipay\')">支付宝结算</label>'+
+    '</div></div>'+
+    '<div id="settle-bank-section">'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款银行</div><select class="ant-input"><option value="">请选择开户银行</option><option>中国工商银行</option><option>中国建设银行</option><option>中国农业银行</option><option>中国银行</option><option>招商银行</option><option>交通银行</option><option>邮储银行</option></select></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>开户行</div><input class="ant-input" placeholder="如：中国工商银行深圳南山支行"></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款账户名</div><input class="ant-input" placeholder="对公账户全称"></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款账号</div><input class="ant-input" placeholder="银行卡号"></div>'+
+    '</div>'+
+    '<div id="settle-alipay-section" style="display:none;">'+
+    '<div style="font-size:var(--font-size-sm);color:var(--text-secondary);margin-bottom:12px;">收款账户（来自个人中心支付宝认证）</div>'+
+    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">真实姓名</div><div class="bind-val">'+profile.alipayName+'</div></div></div>'+
+    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">身份证号</div><div class="bind-val">'+profile.alipayIdCard+'</div></div></div>'+
+    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">支付宝账号</div><div class="bind-val">'+profile.alipayAccount+'</div></div></div>'+
+    '<div class="ant-alert">结算款将在审核通过后打入支付宝账号 '+profile.alipayAccount+'。</div>'+
+    '</div>'+
     '<div class="ant-form-item"><div class="ant-form-label">备注说明</div><textarea class="ant-input" style="min-height:48px;" placeholder="选填"></textarea></div>'+
     '<div style="border-top:1px solid var(--border-light);padding-top:16px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;">'+
       '<span style="color:var(--text-secondary);">结算金额</span>'+
