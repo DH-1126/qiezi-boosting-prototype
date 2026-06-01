@@ -1,5 +1,5 @@
 
-var curPage='home',openGroup='workspace',curTab='全部',curSubTab='按日统计',toastTimer,currentRole='operator',grabCounter=0;
+var curPage='home',openGroup='workspace',curTab='全部',curSubTab='按日统计',toastTimer,currentRole='admin',grabCounter=0;
 
 var roleDefs=[
   {key:'admin',name:'平台管理员',icon:'👑',css:'admin',desc:'系统最高权限，处理特殊事件'},
@@ -15,6 +15,8 @@ function getRole(){return roleDefs.find(function(r){return r.key===currentRole;}
 
 function roleVisible(pageId){
   var r=currentRole;
+  // 平台资产：仅平台管理员
+  if(pageId==='platform-assets') return r==='admin';
   // 我的资产：仅工会和打手
   if(pageId==='my-assets') return r==='guild_admin'||r==='guild_operator'||r==='booster';
   // 订单录入：打手和客服不可见
@@ -37,6 +39,7 @@ function roleHasGroup(groupKey){
 var menuTree=[
   {key:'workspace',icon:'📊',label:'工作台',children:[
     {id:'home',label:'首页',icon:'🏠'},
+    {id:'platform-assets',label:'平台资产',icon:'🏦'},
     {id:'my-assets',label:'我的资产',icon:'💎'}
   ]},
   {key:'order',icon:'📋',label:'订单管理',badge:'28',children:[
@@ -68,7 +71,7 @@ var menuTree=[
 ];
 
 var pageTitles={
-  home:'工作台 > 首页','my-assets':'工作台 > 我的资产',
+  home:'工作台 > 首页','platform-assets':'工作台 > 平台资产','my-assets':'工作台 > 我的资产',
   'order-entry':'订单管理 > 订单录入','order-mgmt':'订单管理 > 订单管理','order-pool':'订单管理 > 订单池',
   'data-overview':'数据报表 > 数据概览','order-report':'数据报表 > 订单报表',
   'guild-settlement':'财务管理 > 工会结算','booster-settlement':'财务管理 > 打手结算','cs-settlement':'财务管理 > 客服结算','withdraw-audit':'财务管理 > 提现审核',
@@ -77,7 +80,7 @@ var pageTitles={
 };
 
 var pageIcons={
-  home:'📊','my-assets':'💎','order-entry':'➕','order-mgmt':'📋','order-pool':'📦',
+  home:'📊','platform-assets':'🏦','my-assets':'💎','order-entry':'➕','order-mgmt':'📋','order-pool':'📦',
   'data-overview':'📊','order-report':'📑','guild-settlement':'🏛️','booster-settlement':'💵','cs-settlement':'💳','withdraw-audit':'🔐',
   'org-mgmt':'🏢','position-mgmt':'📝','user-mgmt':'👤','booster-review':'✅','bind-set':'🔗','game-config':'🎮','service-type-mgmt':'🛠','permission-mgmt':'🔐'
 };
@@ -325,6 +328,40 @@ function rMyAssets(){
     h+='<tr><td>'+f.time+'</td><td><span class="ant-tag '+f.tag+'">'+f.type+'</span></td><td class="link">'+f.order+'</td><td'+cls+'>'+f.chg+'</td><td>'+f.bal+'</td><td>'+f.note+'</td></tr>';
   });
   h+='</tbody></table></div></div></div>';
+  return h;
+}
+
+// ── 平台资产（平台管理员） ──
+function rPlatformAssets(){
+  var guilds=[
+    {name:'三角洲工会A组',admin:'张会长',tel:'138****1111',balance:'¥24,880.00',pending:'¥8,750.00',settled:'¥186,200.00',total:'¥211,080.00',orders:28,members:8,created:'2026-03-15'},
+    {name:'三角洲工会B组',admin:'李会长',tel:'139****2222',balance:'¥15,620.00',pending:'¥4,760.00',settled:'¥98,500.00',total:'¥114,120.00',orders:18,members:6,created:'2026-04-01'},
+    {name:'三角洲工会C组',admin:'王会长',tel:'137****3333',balance:'¥6,380.00',pending:'¥2,730.00',settled:'¥42,800.00',total:'¥49,180.00',orders:10,members:4,created:'2026-05-10'}
+  ];
+  var totalBalance=24680+15620+6380;
+  var totalPending=8750+4760+2730;
+  var totalSettled=186200+98500+42800;
+  var totalAssets=totalBalance+totalSettled;
+  var totalOrders=28+18+10;
+  var totalMembers=8+6+4;
+
+  var h='';
+  // Top stat cards
+  h+='<div class="stat-row"><div class="stat-item"><div class="label">平台总资产</div><div class="value" style="color:var(--primary);">¥'+totalAssets.toLocaleString()+'.00</div><div class="sub">'+guilds.length+' 个工会 · '+totalMembers+' 名代练</div></div><div class="stat-item"><div class="label">工会余额合计</div><div class="value" style="color:var(--success);">¥'+totalBalance.toLocaleString()+'.00</div><div class="sub">可结算金额</div></div><div class="stat-item"><div class="label">待结算总额</div><div class="value" style="color:var(--warning);">¥'+totalPending.toLocaleString()+'.00</div><div class="sub">'+totalOrders+' 笔订单待结算</div></div><div class="stat-item"><div class="label">已结算总额</div><div class="value">¥'+totalSettled.toLocaleString()+'.00</div><div class="sub">历史累计结算</div></div></div>';
+
+  // Platform flow summary cards
+  h+='<div style="display:flex;gap:16px;margin-bottom:24px;"><div class="ant-card" style="flex:1;"><div class="ant-card-head">📈 平台流水概览</div><div class="ant-card-body" style="padding:16px;"><div style="display:flex;gap:24px;"><div style="flex:1;text-align:center;padding:16px;background:var(--primary-light);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--primary);">¥52,600</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">本月流水</div><div style="font-size:11px;color:var(--success);">↑ 15% 较上月</div></div><div style="flex:1;text-align:center;padding:16px;background:var(--success-light);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--success);">¥16,240</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">本月结算</div><div style="font-size:11px;color:var(--success);">完成率 68.8%</div></div><div style="flex:1;text-align:center;padding:16px;background:var(--warning-light);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--warning);">¥8,750</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">待打款</div><div style="font-size:11px;color:var(--danger);">2 笔工会结算申请</div></div><div style="flex:1;text-align:center;padding:16px;background:var(--bg);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--text);">¥98,200</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">平台收入</div><div style="font-size:11px;color:var(--success);">利润率 30.2%</div></div></div></div></div>';
+
+  // Settlement status cards
+  h+='<div class="ant-card" style="flex:1;"><div class="ant-card-head">💰 结算状态分布</div><div class="ant-card-body" style="padding:16px;"><div style="display:flex;gap:16px;"><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--primary);">128</div><div style="font-size:12px;color:var(--text-secondary);">已完成订单</div></div><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--warning);">28</div><div style="font-size:12px;color:var(--text-secondary);">待结算订单</div></div><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--success);">5</div><div style="font-size:12px;color:var(--text-secondary);">已打款笔数</div></div><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--danger);">2</div><div style="font-size:12px;color:var(--text-secondary);">待打款笔数</div></div></div></div></div></div>';
+
+  // Guild asset table
+  h+='<div class="ant-card"><div class="ant-card-head">🏛️ 工会资产明细</div><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>工会名称</th><th>管理员</th><th>联系方式</th><th>资产余额</th><th>待结算</th><th>已结算</th><th>总资产</th><th>执行中订单</th><th>代练人数</th><th>创建时间</th></tr></thead><tbody>';
+  guilds.forEach(function(g){
+    h+='<tr class="clickable" onclick="curPage=\'order-mgmt\';openGroup=\'order\';renderTree();renderContent()"><td style="font-weight:500;"><span class="ant-tag ant-tag-purple">'+g.name+'</span></td><td>'+g.admin+'</td><td>'+g.tel+'</td><td style="font-weight:600;color:var(--success);">'+g.balance+'</td><td style="font-weight:600;color:var(--warning);">'+g.pending+'</td><td>'+g.settled+'</td><td style="font-weight:600;">'+g.total+'</td><td>'+g.orders+'</td><td>'+g.members+'</td><td>'+g.created+'</td></tr>';
+  });
+  h+='</tbody></table></div></div></div>';
+
   return h;
 }
 
