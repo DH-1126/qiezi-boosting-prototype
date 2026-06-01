@@ -484,39 +484,12 @@ function rHome(){
 }
 
 // ── 结算/提现弹窗（全局） ──
-function switchSettleMethod(m){
-  var bank=document.getElementById('settle-bank-section');
-  var alipay=document.getElementById('settle-alipay-section');
-  var labels=document.querySelectorAll('#settleMethodGroup .radio-item');
-  labels.forEach(function(el){el.classList.remove('active');});
-  if(m==='bank'){
-    bank.style.display='block';alipay.style.display='none';
-    labels[0].classList.add('active');
-  }else{
-    bank.style.display='none';alipay.style.display='block';
-    labels[1].classList.add('active');
-  }
-}
 function openGuildSettle(){
   var body='<div class="ant-form-item"><div class="ant-form-label">工会名称</div><input class="ant-input" value="三角洲工会A组" readonly style="background:var(--bg);"></div>'+
-    '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>结算方式</div>'+
-    '<div class="radio-group" id="settleMethodGroup">'+
-    '<label class="radio-item active" onclick="switchSettleMethod(\'bank\')">银行卡结算</label>'+
-    '<label class="radio-item" onclick="switchSettleMethod(\'alipay\')">支付宝结算</label>'+
-    '</div></div>'+
-    '<div id="settle-bank-section">'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款银行</div><select class="ant-input"><option value="">请选择开户银行</option><option>中国工商银行</option><option>中国建设银行</option><option>中国农业银行</option><option>中国银行</option><option>招商银行</option><option>交通银行</option><option>邮储银行</option></select></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>开户行</div><input class="ant-input" placeholder="如：中国工商银行深圳南山支行"></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款账户名</div><input class="ant-input" placeholder="对公账户全称"></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款账号</div><input class="ant-input" placeholder="银行卡号"></div>'+
-    '</div>'+
-    '<div id="settle-alipay-section" style="display:none;">'+
-    '<div style="font-size:var(--font-size-sm);color:var(--text-secondary);margin-bottom:12px;">收款账户（来自个人中心支付宝认证）</div>'+
-    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">真实姓名</div><div class="bind-val">'+profile.alipayName+'</div></div></div>'+
-    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">身份证号</div><div class="bind-val">'+profile.alipayIdCard+'</div></div></div>'+
-    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">支付宝账号</div><div class="bind-val">'+profile.alipayAccount+'</div></div></div>'+
-    '<div class="ant-alert">结算款将在审核通过后打入支付宝账号 '+profile.alipayAccount+'。</div>'+
-    '</div>'+
     '<div class="ant-form-item"><div class="ant-form-label">备注说明</div><textarea class="ant-input" style="min-height:48px;" placeholder="选填"></textarea></div>'+
     '<div style="border-top:1px solid var(--border-light);padding-top:16px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;">'+
       '<span style="color:var(--text-secondary);">结算金额</span>'+
@@ -568,6 +541,56 @@ function rOrderEntry(){return'<div style="display:flex;gap:16px;align-items:flex
 // ── 订单审核（新增页面） ──
 function rOrderReview(){var rows=[{id:'DD202605260012',title:'排位青铜→钻石',type:'代练',game:'三角洲',zone:'QQ',amt:'¥298',src:'内部录入',op:'小周',time:'05-26 14:30',cust:'138****8888'},{id:'DD202605260008',title:'任务代打日常',type:'代练',game:'三角洲',zone:'微信',amt:'¥120',src:'上家抢单',op:'运营A',time:'05-26 12:00',cust:'137****6666'},{id:'DD202605260005',title:'账号练级1→30',type:'代练',game:'三角洲',zone:'QQ',amt:'¥650',src:'外部抢单',op:'小周',time:'05-26 10:15',cust:'136****0001'},{id:'DD202605250015',title:'装备刷取x3',type:'代练',game:'三角洲',zone:'QQ',amt:'¥520',src:'内部录入',op:'运营B',time:'05-25 16:30',cust:'135****0002'},{id:'DD202605250012',title:'排位黄金→铂金',type:'代练',game:'三角洲',zone:'微信',amt:'¥350',src:'内部录入',op:'小周',time:'05-25 14:00',cust:'134****0003'}];var h='<div class="ant-card"><div class="ant-card-head">待审核订单 <span style="font-size:var(--font-size);color:var(--danger);">（'+rows.length+'单）</span></div><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>订单编号</th><th>订单标题</th><th>订单类型</th><th>游戏</th><th>区服</th><th>金额</th><th>来源</th><th>录入人</th><th>客户电话</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';rows.forEach(function(r){h+='<tr class="clickable"><td class="link">'+r.id+'</td><td>'+r.title+'</td><td>'+r.type+'</td><td>'+r.game+'</td><td>'+r.zone+'</td><td style="font-weight:500;">'+r.amt+'</td><td>'+r.src+'</td><td>'+r.op+'</td><td>'+r.cust+'</td><td>'+r.time+'</td><td><button class="ant-btn ant-btn-success ant-btn-sm" onclick="toast(\'✓ 审核通过\')">通过</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'已驳回\')">驳回</button> <button class="ant-btn ant-btn-sm">详情</button></td></tr>';});h+='</tbody></table></div></div></div><div class="ant-pagination"><span class="total">共 '+rows.length+' 条</span><div><span class="page-btn active">1</span></div></div>';return h;}
 
+// ── 上传截图辅助 ──
+function addUploadFile(id,max){
+  var preview=document.getElementById(id+'-preview');
+  var files=preview.querySelectorAll('.upload-thumb');
+  if(files.length>=max){toast('最多上传'+max+'张');return;}
+  var colors=['#e6f4ff','#f0f9eb','#fdf6ec','#fef0f0','#f9f0ff'];
+  var c=colors[files.length%colors.length];
+  var thumb=document.createElement('div');
+  thumb.className='upload-thumb';
+  thumb.style.cssText='width:56px;height:56px;background:'+c+';border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;position:relative;flex-shrink:0;border:1px solid var(--border-light);';
+  thumb.innerHTML='🗄️<div style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--danger);color:#fff;border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1;" onclick="event.stopPropagation();this.parentNode.remove();">×</div>';
+  preview.appendChild(thumb);
+}
+function uploadAreaHTML(id,max){
+  return '<div class="upload-area" id="'+id+'-area" onclick="addUploadFile(\''+id+'\','+max+')" style="padding:12px;text-align:center;cursor:pointer;"><div style="font-size:24px;margin-bottom:4px;color:var(--text-tertiary);">+</div><div style="font-size:12px;">点击上传截图（最多'+max+'张）</div></div><div id="'+id+'-preview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>';
+}
+
+// ── 完成订单弹窗 ──
+function openCompleteOrder(oid){
+  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>完成情况记录</div>'+
+    '<div style="display:flex;gap:24px;">'+
+    '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="complete-type-1" checked> 按要求完成</label>'+
+    '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;"><input type="checkbox" id="complete-type-2"> 协商后已完成</label>'+
+    '</div></div>'+
+    '<div class="ant-form-item"><div class="ant-form-label">群聊截图</div>'+uploadAreaHTML('complete-upload',8)+'</div>';
+  openModal('✅ 完成订单 - '+oid,body,
+    '<button class="ant-btn" onclick="closeModal()">取消</button>'+
+    '<button class="ant-btn ant-btn-primary" onclick="var c1=document.getElementById(\'complete-type-1\').checked;var c2=document.getElementById(\'complete-type-2\').checked;if(!c1&&!c2){toast(\'请选择完成情况\');return;}closeModal();toast(\'✓ 订单已完成\')">确认完成</button>');
+}
+
+// ── 暂停订单弹窗 ──
+function openPauseOrder(oid){
+  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>暂停原因</div>'+
+    '<select class="ant-input" id="pause-reason"><option value="">请选择暂停原因</option><option>账号异常</option><option>老板撤单</option><option>代练问题</option><option>其他</option></select></div>'+
+    '<div class="ant-form-item"><div class="ant-form-label">暂停凭证</div>'+uploadAreaHTML('pause-upload',8)+'</div>';
+  openModal('⏸️ 暂停订单 - '+oid,body,
+    '<button class="ant-btn" onclick="closeModal()">取消</button>'+
+    '<button class="ant-btn ant-btn-primary" onclick="var r=document.getElementById(\'pause-reason\').value;if(!r){toast(\'请选择暂停原因\');return;}closeModal();toast(\'✓ 订单已暂停：\'+r)">确认暂停</button>');
+}
+
+// ── 取消订单弹窗（已暂停订单）──
+function openCancelOrder(oid){
+  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>处置方案</div>'+
+    '<select class="ant-input" id="cancel-disposal"><option value="">请选择处置方案</option><option>退款</option><option>取消</option><option>挂起</option><option>其他</option></select></div>'+
+    '<div class="ant-form-item"><div class="ant-form-label">处置凭证</div>'+uploadAreaHTML('cancel-upload',8)+'</div>';
+  openModal('❌ 取消订单 - '+oid,body,
+    '<button class="ant-btn" onclick="closeModal()">取消</button>'+
+    '<button class="ant-btn ant-btn-danger" onclick="var d=document.getElementById(\'cancel-disposal\').value;if(!d){toast(\'请选择处置方案\');return;}closeModal();toast(\'✓ 订单已取消，处置方案：\'+d)">确认取消</button>');
+}
+
 // ── 订单管理 ──
 function rOrderMgmt(){
   var statusTabs=['全部','待审核','待指派','执行中','待验收','待结算','已暂停','已完成','已关单'];
@@ -599,19 +622,19 @@ function rOrderMgmt(){
   h+='<div style="margin-bottom:16px;"><span class="filter-toggle" id="filter-toggle" onclick="var p=document.getElementById(\'filter-panel\');var t=document.getElementById(\'filter-toggle\');if(p.classList.contains(\'show\')){p.classList.remove(\'show\');t.innerHTML=\'▼ 展开筛选\';}else{p.classList.add(\'show\');t.innerHTML=\'▲ 收起筛选\';}">▼ 展开筛选</span></div>';
   h+='<div class="filter-panel" id="filter-panel"><div class="ant-row"><div class="ant-form-item" style="margin-bottom:0;"><div class="ant-form-label" style="margin-bottom:4px;">创建时间</div><div style="display:flex;gap:8px;"><input class="ant-input" style="width:120px;" placeholder="开始日期"><span style="line-height:32px;">-</span><input class="ant-input" style="width:120px;" placeholder="结束日期"></div></div><div class="ant-form-item" style="margin-bottom:0;"><div class="ant-form-label" style="margin-bottom:4px;">订单编号</div><input class="ant-input" placeholder="订单编号"></div><div class="ant-form-item" style="margin-bottom:0;"><div class="ant-form-label" style="margin-bottom:4px;">订单类型</div><select class="ant-input"><option>全部</option><option>代练</option><option>陪玩</option></select></div></div><div class="ant-row" style="margin-top:12px;"><div class="ant-form-item" style="margin-bottom:0;"><div class="ant-form-label" style="margin-bottom:4px;">当前工会</div><select class="ant-input"><option>全部</option><option>三角洲工会A组</option><option>三角洲工会B组</option></select></div><div class="ant-form-item" style="margin-bottom:0;"><div class="ant-form-label" style="margin-bottom:4px;">当前打手</div><select class="ant-input"><option>全部</option><option>王代练</option><option>刘代练</option><option>陈代练</option><option>赵代练</option><option>孙代练</option></select></div><div class="ant-form-item" style="margin-bottom:0;"><div class="ant-form-label" style="margin-bottom:4px;">当前客服</div><select class="ant-input"><option>全部</option><option>小李</option><option>小周</option></select></div></div><div style="display:flex;gap:8px;margin-top:12px;"><button class="ant-btn ant-btn-primary ant-btn-sm">查询</button><button class="ant-btn ant-btn-sm">重置</button></div></div>';
   // Table
-  h+='<div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th class="sticky-col">操作</th><th>订单编号</th><th>订单标题</th><th>订单状态</th><th>当前打手</th><th>所属工会</th><th>创建时间</th><th>价格</th><th>结算</th><th>保证金</th><th>客服</th><th>来源</th><th>联系方式</th><th>类型</th><th>游戏</th><th>区服</th><th>角色</th></tr></thead><tbody>';
+  h+='<div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th class="sticky-col">操作</th><th>订单编号</th><th>订单标题</th><th>订单状态</th><th>当前打手</th><th>所属工会</th><th>创建时间</th><th>价格</th><th>结算</th><th>客服</th><th>来源</th><th>联系方式</th><th>类型</th><th>游戏</th><th>区服</th><th>角色</th></tr></thead><tbody>';
   filtered.forEach(function(r){
     var ops='';
     var baseOps='<button class="ant-btn ant-btn-sm" onclick="showOrderDetail(\''+r.id+'\')">查看详情</button>';
-    if(r.status==='待审核') ops=baseOps+' <button class="ant-btn ant-btn-success ant-btn-sm" onclick="toast(\'✓ 审核通过\')">通过</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'已驳回\')">驳回</button> <button class="ant-btn ant-btn-sm" onclick="toast(\'已暂停\')">暂停</button>';
-    else if(r.status==='待指派') ops=baseOps+' <button class="ant-btn ant-btn-primary ant-btn-sm" onclick="toast(\'✓ 已指派\')">指派</button> <button class="ant-btn ant-btn-sm" onclick="toast(\'已暂停\')">暂停</button>';
-    else if(r.status==='执行中') ops=baseOps+' <button class="ant-btn ant-btn-sm" onclick="toast(\'✓ 更换打手成功\')">更换打手</button> <button class="ant-btn ant-btn-sm" onclick="toast(\'已暂停\')">暂停</button>';
-    else if(r.status==='待验收') ops=baseOps+' <button class="ant-btn ant-btn-success ant-btn-sm" onclick="toast(\'✓ 验收通过\')">验收</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'已退回\')">退回</button> <button class="ant-btn ant-btn-sm" onclick="toast(\'已暂停\')">暂停</button>';
-    else if(r.status==='待结算') ops=baseOps+' <button class="ant-btn ant-btn-success ant-btn-sm" onclick="toast(\'✓ 确认结算\')">结算</button> <button class="ant-btn ant-btn-sm" onclick="toast(\'已暂停\')">暂停</button>';
-    else if(r.status==='已暂停') ops=baseOps+' <button class="ant-btn ant-btn-sm" onclick="toast(\'✓ 订单已恢复\')">恢复订单</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'订单已取消，状态变为已完结\')">取消订单</button>';
+    if(r.status==='待审核'){var pb1=(currentRole==='operator'||currentRole==='guild_admin')?' <button class="ant-btn ant-btn-sm" onclick="openPauseOrder(\''+r.id+'\')">暂停</button>':'';ops=baseOps+' <button class="ant-btn ant-btn-success ant-btn-sm" onclick="toast(\'✓ 审核通过\')">通过</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'已驳回\')">驳回</button>'+pb1;}
+    else if(r.status==='待指派'){var pb2=(currentRole==='operator'||currentRole==='guild_admin')?' <button class="ant-btn ant-btn-sm" onclick="openPauseOrder(\''+r.id+'\')">暂停</button>':'';ops=baseOps+' <button class="ant-btn ant-btn-primary ant-btn-sm" onclick="toast(\'✓ 已指派\')">指派</button>'+pb2;}
+    else if(r.status==='执行中'){var adminOps='';if(currentRole==='operator'||currentRole==='guild_admin'){adminOps=' <button class="ant-btn ant-btn-success ant-btn-sm" onclick="openCompleteOrder(\''+r.id+'\')">完成</button> <button class="ant-btn ant-btn-sm" onclick="openPauseOrder(\''+r.id+'\')">暂停</button>';}else{adminOps=' <button class="ant-btn ant-btn-sm" onclick="toast(\'已暂停\')">暂停</button>';}ops=baseOps+adminOps;}
+    else if(r.status==='待验收'){var pb3=(currentRole==='operator'||currentRole==='guild_admin')?' <button class="ant-btn ant-btn-sm" onclick="openPauseOrder(\''+r.id+'\')">暂停</button>':'';ops=baseOps+' <button class="ant-btn ant-btn-success ant-btn-sm" onclick="toast(\'✓ 验收通过\')">验收</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'已退回\')">退回</button>'+pb3;}
+    else if(r.status==='待结算'){var pb4=(currentRole==='operator'||currentRole==='guild_admin')?' <button class="ant-btn ant-btn-sm" onclick="openPauseOrder(\''+r.id+'\')">暂停</button>':'';ops=baseOps+' <button class="ant-btn ant-btn-success ant-btn-sm" onclick="toast(\'✓ 确认结算\')">结算</button>'+pb4;}
+    else if(r.status==='已暂停'){var po=' <button class="ant-btn ant-btn-sm" onclick="toast(\'✓ 订单已恢复\')">恢复订单</button>';if(currentRole==='operator'||currentRole==='guild_admin'){po+=' <button class="ant-btn ant-btn-sm" onclick="toast(\'✓ 更换打手成功\')">更换打手</button>';}po+=' <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="openCancelOrder(\''+r.id+'\')">取消订单</button>';ops=baseOps+po;}
     else if(r.status==='已完成') ops=baseOps+' <span style="color:var(--text-secondary);">已完结</span>';
     else if(r.status==='已关单') ops=baseOps+' <span style="color:var(--text-secondary);">已关闭</span>';
-    h+='<tr class="clickable"><td class="sticky-col" style="white-space:nowrap;">'+ops+'</td><td class="link">'+r.id+'</td><td>'+r.title+'</td><td><span class="ant-tag '+r.st+'">'+r.status+'</span></td><td>'+r.booster+'</td><td>'+(r.guild==='-'?'-':'<span class="ant-tag ant-tag-purple">'+r.guild+'</span>')+'</td><td>'+r.time+'</td><td>'+r.amt+'</td><td>'+r.settle+'</td><td>'+r.dep+'</td><td>'+r.cs+'</td><td>'+r.src+'</td><td>'+r.contact+'</td><td>'+r.type+'</td><td>'+r.game+'</td><td>'+r.zone+'</td><td>'+r.role+'</td></tr>';
+    h+='<tr class="clickable"><td class="sticky-col" style="white-space:nowrap;">'+ops+'</td><td class="link">'+r.id+'</td><td>'+r.title+'</td><td><span class="ant-tag '+r.st+'">'+r.status+'</span></td><td>'+r.booster+'</td><td>'+(r.guild==='-'?'-':'<span class="ant-tag ant-tag-purple">'+r.guild+'</span>')+'</td><td>'+r.time+'</td><td>'+r.amt+'</td><td>'+r.settle+'</td><td>'+r.cs+'</td><td>'+r.src+'</td><td>'+r.contact+'</td><td>'+r.type+'</td><td>'+r.game+'</td><td>'+r.zone+'</td><td>'+r.role+'</td></tr>';
   });
   h+='</tbody></table></div></div></div><div class="ant-pagination"><span class="total">共 '+filtered.length+' 条</span><div><span class="page-btn active">1</span><span class="page-btn">2</span></div></div>';
   return h;
@@ -631,9 +654,9 @@ function doGrab(rid,rtitle,ramt){
 
 function rOrderPool(){
   var rows=[{id:'EXT-20260526001',title:'三角洲排位黄金→钻石',info:'排位上分',amt:'¥350',game:'三角洲',zone:'QQ',dur:'168h',time:'5分钟前',dep:'¥50',contact:'133****1111'},{id:'EXT-20260526002',title:'三角洲装备刷取x3',info:'装备刷取',amt:'¥520',game:'三角洲',zone:'微信',dur:'72h',time:'12分钟前',dep:'¥80',contact:'138****2222'},{id:'EXT-20260526003',title:'三角洲账号练级1→30',info:'账号练级',amt:'¥650',game:'三角洲',zone:'QQ',dur:'240h',time:'25分钟前',dep:'¥100',contact:'137****3333'},{id:'EXT-20260525004',title:'三角洲排位上分铂金→钻石',info:'排位上分',amt:'¥420',game:'三角洲',zone:'QQ',dur:'120h',time:'1小时前',dep:'¥60',contact:'135****4444'},{id:'EXT-20260525005',title:'三角洲任务代打周常全清',info:'任务代打',amt:'¥200',game:'三角洲',zone:'微信',dur:'48h',time:'2小时前',dep:'¥30',contact:'136****5555'},{id:'EXT-20260524006',title:'三角洲排位钻石→黑鹰',info:'排位上分',amt:'¥800',game:'三角洲',zone:'QQ',dur:'336h',time:'3小时前',dep:'¥150',contact:'139****6666'},{id:'EXT-20260524007',title:'三角洲装备刷取全套',info:'装备刷取',amt:'¥1,200',game:'三角洲',zone:'QQ',dur:'168h',time:'5小时前',dep:'¥200',contact:'132****7777'},{id:'EXT-20260523008',title:'三角洲账号练级10→50',info:'账号练级',amt:'¥980',game:'三角洲',zone:'微信',dur:'480h',time:'1天前',dep:'¥180',contact:'131****8888'}];
-  var h='<div class="filter-bar"><input class="ant-input" style="width:130px;" placeholder="游戏名称"><input class="ant-input" style="width:120px;" placeholder="游戏区服"><input class="ant-input" style="width:140px;" placeholder="订单编号"><select class="ant-input" style="width:100px;"><option>订单类型</option><option>代练</option><option>陪玩</option></select><select class="ant-input" style="width:100px;"><option>排序</option><option>最新发布</option><option>金额最高</option></select><button class="ant-btn ant-btn-primary ant-btn-sm">查询</button><button class="ant-btn ant-btn-sm">重置</button></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>订单编号</th><th>订单标题</th><th>商品信息</th><th>订单金额</th><th>游戏</th><th>区服</th><th>时长要求</th><th>发布时间</th><th>用户联系方式</th><th>保证金</th><th>操作</th></tr></thead><tbody>';
+  var h='<div class="filter-bar"><input class="ant-input" style="width:130px;" placeholder="游戏名称"><input class="ant-input" style="width:120px;" placeholder="游戏区服"><input class="ant-input" style="width:140px;" placeholder="订单编号"><select class="ant-input" style="width:100px;"><option>订单类型</option><option>代练</option><option>陪玩</option></select><select class="ant-input" style="width:100px;"><option>排序</option><option>最新发布</option><option>金额最高</option></select><button class="ant-btn ant-btn-primary ant-btn-sm">查询</button><button class="ant-btn ant-btn-sm">重置</button></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>订单编号</th><th>订单标题</th><th>商品信息</th><th>订单金额</th><th>游戏</th><th>区服</th><th>时长要求</th><th>发布时间</th><th>用户联系方式</th><th>操作</th></tr></thead><tbody>';
   rows.forEach(function(r){
-    h+='<tr class="clickable"><td class="link">'+r.id+'</td><td>'+r.title+'</td><td>'+r.info+'</td><td style="font-weight:500;">'+r.amt+'</td><td>'+r.game+'</td><td>'+r.zone+'</td><td>'+r.dur+'</td><td>'+r.time+'</td><td>'+r.contact+'</td><td>'+r.dep+'</td><td><button class="ant-btn ant-btn-primary ant-btn-sm" onclick="doGrab(\''+r.id+'\',\''+r.title+'\',\''+r.amt+'\')">抢单</button></td></tr>';
+    h+='<tr class="clickable"><td class="link">'+r.id+'</td><td>'+r.title+'</td><td>'+r.info+'</td><td style="font-weight:500;">'+r.amt+'</td><td>'+r.game+'</td><td>'+r.zone+'</td><td>'+r.dur+'</td><td>'+r.time+'</td><td>'+r.contact+'</td><td><button class="ant-btn ant-btn-primary ant-btn-sm" onclick="doGrab(\''+r.id+'\',\''+r.title+'\',\''+r.amt+'\')">抢单</button></td></tr>';
   });
   h+='</tbody></table></div></div></div><div class="ant-pagination"><span class="total">共 '+rows.length+' 条</span><div><span class="page-btn active">1</span></div></div>';
   return h;
