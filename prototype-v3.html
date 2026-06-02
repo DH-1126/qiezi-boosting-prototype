@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代练管理平台 — 全角色原型 v3</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#f0f2f5; }
+
+  /* 角色切换 — 下拉菜单 */
+  .role-bar { background:#141414; color:#fff; padding:0 16px; height:44px; display:flex; align-items:center; justify-content:space-between; font-size:13px; position:sticky; top:0; z-index:300; }
+  .role-bar .brand { font-weight:bold; font-size:14px; display:flex; align-items:center; gap:6px; }
+  .role-bar .brand .dot { width:6px;height:6px;background:#52c41a;border-radius:50%; }
+  .role-switcher { position:relative; }
+  .role-dropdown { display:flex; align-items:center; gap:8px; padding:6px 14px; border-radius:6px; cursor:pointer; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:13px; transition:all .2s; user-select:none; }
+  .role-dropdown:hover { background:rgba(255,255,255,0.15); }
+  .role-dropdown .arrow { font-size:10px; margin-left:2px; transition:transform .2s; }
+  .role-dropdown.open .arrow { transform:rotate(180deg); }
+  .role-dropdown .rdot { width:7px;height:7px;border-radius:50%; display:inline-block; }
+  .role-dropdown .rdot.ops { background:#1890ff; }
+  .role-dropdown .rdot.cs { background:#fa8c16; }
+  .role-dropdown .rdot.booster { background:#52c41a; }
+  .role-menu { position:absolute; top:100%; right:0; margin-top:6px; background:#1f1f1f; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:4px; min-width:190px; display:none; z-index:400; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+  .role-menu.show { display:block; }
+  .role-menu-item { padding:10px 14px; cursor:pointer; border-radius:6px; font-size:13px; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:10px; transition:all .15s; }
+  .role-menu-item:hover { background:rgba(255,255,255,0.08); color:#fff; }
+  .role-menu-item.active { color:#fff; }
+  .role-menu-item .check { margin-left:auto; font-size:11px; visibility:hidden; }
+  .role-menu-item.active .check { visibility:visible; }
+  .role-menu-item .rdot { width:7px;height:7px;border-radius:50%; display:inline-block; }
+  .role-menu-item .rdot.ops { background:#1890ff; }
+  .role-menu-item .rdot.cs { background:#fa8c16; }
+  .role-menu-item .rdot.booster { background:#52c41a; }
+  .role-menu-divider { height:1px; background:rgba(255,255,255,0.08); margin:4px 8px; }
+
+  /* 布局 */
+  .layout { display:flex; min-height:calc(100vh - 44px); }
+  .sidebar { width:200px; background:#fff; border-right:1px solid #f0f0f0; display:flex; flex-direction:column; position:sticky; top:44px; height:calc(100vh - 44px); }
+  .sidebar .user-info { padding:16px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; gap:10px; }
+  .sidebar .user-info .avatar { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px; }
+  .sidebar .user-info .name { font-size:14px; font-weight:500; }
+  .sidebar .user-info .role-tag { font-size:11px; color:#999; }
+  .nav-section { padding:4px 0; }
+  .nav-label { padding:8px 16px 2px; font-size:10px; color:#bbb; text-transform:uppercase; letter-spacing:1px; }
+  .nav-link { padding:9px 16px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px; color:#555; transition:all .15s; border-left:3px solid transparent; }
+  .nav-link:hover { color:#1890ff; background:#fafafa; }
+  .nav-link.active { color:#1890ff; background:#e6f7ff; border-left-color:#1890ff; font-weight:500; }
+  .nav-link .badge { background:#f5222d; color:#fff; padding:1px 6px; border-radius:10px; font-size:10px; margin-left:auto; }
+  .nav-link .badge.warn { background:#fa8c16; }
+
+  .main { flex:1; }
+  .topbar { background:#fff; padding:0 20px; height:48px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; font-size:13px; position:sticky; top:44px; z-index:50; }
+  .topbar .title { font-weight:500; }
+  .content { padding:20px; }
+  .view { display:none; }
+  .view.active { display:block; }
+
+  /* 组件 */
+  .stat-cards { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .stat-card { flex:1; min-width:130px; background:#fff; border-radius:8px; padding:18px; cursor:pointer; transition:all .2s; border:1px solid transparent; }
+  .stat-card:hover { border-color:#1890ff; box-shadow:0 2px 8px rgba(24,144,255,0.1); }
+  .stat-card .l { font-size:12px; color:#999; margin-bottom:8px; }
+  .stat-card .v { font-size:28px; font-weight:600; color:#262626; }
+  .stat-card .s { font-size:11px; margin-top:4px; }
+  .panel { background:#fff; border-radius:8px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+  .panel-hd { padding:14px 18px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:500; }
+  .panel-bd { padding:16px 18px; }
+  .panel-bd.nopad { padding:0; }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#fafafa; padding:9px 10px; text-align:left; font-weight:500; color:#888; border-bottom:1px solid #f0f0f0; font-size:12px; white-space:nowrap; }
+  td { padding:9px 10px; border-bottom:1px solid #f5f5f5; }
+  tr.clickable { cursor:pointer; }
+  tr.clickable:hover { background:#e6f7ff; }
+
+  .tag { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; }
+  .tag-o { background:#fff7e6; color:#fa8c16; }
+  .tag-b { background:#e6f7ff; color:#1890ff; }
+  .tag-g { background:#f6ffed; color:#52c41a; }
+  .tag-r { background:#fff1f0; color:#f5222d; }
+  .tag-p { background:#f9f0ff; color:#722ed1; }
+  .tag-gray { background:#f5f5f5; color:#999; }
+
+  .btn { display:inline-block; padding:7px 14px; border-radius:4px; border:1px solid #d9d9d9; background:#fff; color:#333; cursor:pointer; font-size:12px; transition:all .2s; text-decoration:none; }
+  .btn:hover { border-color:#1890ff; color:#1890ff; }
+  .btn-p { background:#1890ff; color:#fff; border-color:#1890ff; }
+  .btn-p:hover { background:#40a9ff; color:#fff; }
+  .btn-s { background:#52c41a; color:#fff; border-color:#52c41a; }
+  .btn-s:hover { background:#73d13d; color:#fff; }
+  .btn-d { color:#f5222d; border-color:#f5222d; }
+  .btn-d:hover { background:#fff1f0; }
+  .btn-w { color:#fa8c16; border-color:#fa8c16; }
+  .btn-sm { padding:4px 10px; font-size:11px; }
+  .btn-xs { padding:3px 8px; font-size:11px; }
+  .btn-group { display:flex; gap:6px; }
+
+  .form-group { margin-bottom:14px; }
+  .form-label { display:block; font-size:12px; color:#333; margin-bottom:4px; font-weight:500; }
+  .form-label .req { color:#f5222d; }
+  .form-input { width:100%; padding:7px 10px; border:1px solid #d9d9d9; border-radius:4px; font-size:13px; transition:all .2s; background:#fff; }
+  .form-input:focus { outline:none; border-color:#1890ff; box-shadow:0 0 0 2px rgba(24,144,255,0.15); }
+  select.form-input { cursor:pointer; }
+  textarea.form-input { resize:vertical; min-height:70px; font-family:inherit; }
+  .form-row { display:flex; gap:14px; }
+  .form-row > * { flex:1; }
+
+  .opt-group { display:flex; gap:6px; flex-wrap:wrap; }
+  .opt-item { padding:6px 14px; border:1px solid #d9d9d9; border-radius:4px; cursor:pointer; font-size:12px; transition:all .2s; background:#fff; }
+  .opt-item:hover { border-color:#1890ff; }
+  .opt-item.sel { background:#e6f7ff; color:#1890ff; border-color:#1890ff; }
+
+  .tabs { display:flex; gap:0; margin-bottom:14px; border-bottom:2px solid #f0f0f0; flex-wrap:wrap; }
+  .tab { padding:8px 14px; cursor:pointer; font-size:12px; color:#888; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .15s; }
+  .tab:hover { color:#1890ff; }
+  .tab.active { color:#1890ff; border-bottom-color:#1890ff; font-weight:500; }
+  .tab .cnt { font-size:11px; }
+
+  .toast { position:fixed; top:60px; right:20px; padding:10px 18px; border-radius:4px; font-size:13px; z-index:9999; display:none; animation:fadeIn .3s; color:#fff; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-8px);} to{opacity:1;transform:translateY(0);} }
+  .steps { display:flex; align-items:center; margin-bottom:20px; overflow-x:auto; gap:0; }
+  .step { display:flex; align-items:center; font-size:11px; white-space:nowrap; }
+  .step .c { width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin-right:4px; }
+  .step .c.done { background:#52c41a; color:#fff; }
+  .step .c.cur { background:#1890ff; color:#fff; }
+  .step .c.wait { background:#f0f0f0; color:#bbb; }
+  .step .l { width:36px;height:1px;background:#e8e8e8;margin:0 8px; }
+  .step .l.done { background:#52c41a; }
+
+  .upload-zone { border:2px dashed #d9d9d9; border-radius:8px; padding:32px; text-align:center; cursor:pointer; transition:all .2s; background:#fafafa; }
+  .upload-zone:hover { border-color:#1890ff; background:#e6f7ff; }
+  .upload-zone .ic { font-size:32px; margin-bottom:6px; }
+
+  .tip { background:#fffbe6; border:1px solid #ffe58f; border-radius:8px; padding:12px 16px; font-size:12px; color:#666; margin-top:12px; }
+  .tip strong { color:#fa8c16; }
+  hr { margin:14px 0; border:none; border-top:1px solid #f0f0f0; }
+  .link { color:#1890ff; cursor:pointer; }
+  .link:hover { color:#40a9ff; text-decoration:underline; }
+
+  /* 模态框 */
+  .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:500; display:none; align-items:flex-start; justify-content:center; padding-top:60px; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:#fff; border-radius:8px; width:800px; max-width:95vw; max-height:80vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.2); }
+  .modal.wide { width:960px; }
+  .modal-hd { padding:16px 24px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:#fff; z-index:1; border-radius:8px 8px 0 0; }
+  .modal-hd h3 { font-size:16px; }
+  .modal-hd .close { cursor:pointer; font-size:20px; color:#bbb; line-height:1; }
+  .modal-hd .close:hover { color:#333; }
+  .modal-bd { padding:20px 24px; }
+  .modal-ft { padding:14px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
+
+  /* 导入步骤 */
+  .import-step { display:none; }
+  .import-step.active { display:block; }
+  .mapping-row { display:flex; gap:10px; align-items:center; margin-bottom:8px; font-size:13px; }
+  .mapping-row .col-name { width:120px; color:#666; }
+  .mapping-row .arrow-icon { color:#bbb; }
+  .mapping-row select { flex:1; }
+  .preview-table-wrap { max-height:200px; overflow-y:auto; border:1px solid #f0f0f0; border-radius:4px; }
+  .preview-table-wrap table { font-size:12px; }
+  .preview-table-wrap th { position:sticky; top:0; }
+</style>
+</head>
+<body>
+
+<!-- 角色切换栏 -->
+<div class="role-bar">
+  <div class="brand"><span class="dot"></span>代练管理平台</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="role-switcher" id="role-switcher">
+      <div class="role-dropdown" id="role-dropdown">
+        <span class="rdot ops"></span> 运营：小周 <span class="arrow">▾</span>
+      </div>
+      <div class="role-menu" id="role-menu">
+        <div class="role-menu-item active" data-role="ops"><span class="rdot ops"></span>运营：小周<span class="check">✓</span></div>
+        <div class="role-menu-item" data-role="cs"><span class="rdot cs"></span>客服：小李<span class="check">✓</span></div>
+        <div class="role-menu-item" data-role="booster"><span class="rdot booster"></span>代练员：王代练<span class="check">✓</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 布局 -->
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar"><span class="title" id="page-title">📊 运营工作台</span><span style="color:#999;font-size:12px;">2026-05-19 周二 14:30</span></div>
+    <div class="content" id="content-area"></div>
+  </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"><div id="modal-content"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 状态 =====
+var currentRole = 'ops';
+var currentPage = 'dashboard';
+var currentImportMode = ''; // 'manual' | 'excel' | 'api'
+
+// ===== 角色配置 =====
+var roleConfig = {
+  ops: {
+    name: '运营：小周', color: '#1890ff', cssClass: 'ops', avatar: '周',
+    nav: [
+      { section:'工作台', items:[
+        {id:'dashboard', icon:'📊', label:'数据概览'},
+        {id:'order-list', icon:'📋', label:'订单列表', badge:'36'},
+      ]},
+      { section:'管理', items:[
+        {id:'booster-mgmt', icon:'👥', label:'代练员管理'},
+        {id:'game-config', icon:'🎮', label:'游戏配置'},
+        {id:'data-reports', icon:'📈', label:'数据报表'},
+      ]}
+    ]
+  },
+  cs: {
+    name: '客服：小李', color: '#fa8c16', cssClass: 'cs', avatar: '李',
+    nav: [
+      { section:'工作台', items:[
+        {id:'cs-dashboard', icon:'📊', label:'工作台概览'},
+      ]},
+      { section:'订单', items:[
+        {id:'order-list-cs', pageOverride:'order-list', icon:'📋', label:'订单列表', badge:'36'},
+      ]},
+      { section:'系统', items:[
+        {id:'cs-logs', icon:'📝', label:'操作日志'},
+      ]}
+    ]
+  },
+  booster: {
+    name: '代练员：王代练', color: '#52c41a', cssClass: 'booster', avatar: '王',
+    nav: [
+      { section:'工作台', items:[
+        {id:'booster-dashboard', icon:'📊', label:'我的工作台'},
+        {id:'order-pool', icon:'📋', label:'接单大厅', badge:'8'},
+      ]},
+      { section:'订单', items:[
+        {id:'my-orders', icon:'📝', label:'我的订单', badge:'3'},
+      ]},
+      { section:'财务', items:[
+        {id:'my-earnings', icon:'💰', label:'我的收益'},
+        {id:'withdraw', icon:'💳', label:'提现'},
+      ]}
+    ]
+  }
+};
+
+// ===== 当前激活的 tab =====
+var currentTab = '全部';
+
+// ===== 渲染侧边栏 =====
+function renderSidebar() {
+  var cfg = roleConfig[currentRole];
+  var html = '<div class="user-info"><div class="avatar" style="background:'+cfg.color+'">'+cfg.avatar+'</div><div><div class="name">'+cfg.name+'</div><div class="role-tag">'+cfg.cssClass==='ops'?'运营':cfg.cssClass==='cs'?'客服':'代练员'+'</div></div></div>';
+  cfg.nav.forEach(function(section) {
+    html += '<div class="nav-section"><div class="nav-label">'+section.section+'</div>';
+    section.items.forEach(function(item) {
+      var bh = '';
+      if (item.badge) { var bc = item.badgeWarn ? 'warn' : ''; bh = ' <span class="badge '+bc+'">'+item.badge+'</span>'; }
+      var isActive = currentPage === (item.pageOverride || item.id) && (!item.tab || item.tab === currentTab);
+      var tabAttr = item.tab ? ' data-tab="'+item.tab+'"' : '';
+      html += '<a class="nav-link'+(isActive?' active':'')+'" data-page="'+(item.pageOverride || item.id)+'"'+tabAttr+'>'+item.icon+' '+item.label+bh+'</a>';
+    });
+    html += '</div>';
+  });
+  document.getElementById('sidebar').innerHTML = html;
+  document.querySelectorAll('.nav-link').forEach(function(lk) {
+    lk.addEventListener('click', function(e) {
+      e.preventDefault();
+      var page = this.getAttribute('data-page');
+      var tab = this.getAttribute('data-tab');
+      navigate(page, tab || '全部');
+    });
+  });
+}
+
+// ===== 导航 =====
+function navigate(page, tab) {
+  currentPage = page;
+  if (tab) currentTab = tab;
+  // order-list-cs 实际渲染 order-list 页面
+  if (page === 'order-list-cs') currentPage = 'order-list';
+  renderSidebar();
+  renderContent();
+}
+
+function getPageTitle() {
+  if (currentRole === 'cs' && currentPage === 'order-list') {
+    return '📋 订单列表 · ' + currentTab;
+  }
+  var all = roleConfig[currentRole].nav;
+  for (var i=0; i<all.length; i++)
+    for (var j=0; j<all[i].items.length; j++)
+      if (all[i].items[j].id === currentPage || (all[i].items[j].pageOverride === currentPage)) return all[i].items[j].icon+' '+all[i].items[j].label;
+  return currentPage;
+}
+
+// ===== 渲染内容 =====
+function renderContent() {
+  document.getElementById('page-title').textContent = getPageTitle();
+  var c = document.getElementById('content-area');
+  c.innerHTML = '';
+  var v = document.createElement('div'); v.className = 'view active';
+
+  switch(currentPage) {
+    case 'dashboard': v.innerHTML = renderOpsDashboard(); break;
+    case 'order-list': v.innerHTML = renderOrderList(currentRole, currentTab); break;
+    case 'booster-mgmt': v.innerHTML = renderBoosterMgmt(); break;
+    case 'game-config': v.innerHTML = ph('🎮 游戏配置','配置游戏信息、服务类型、扣子类型、结算规则'); break;
+    case 'data-reports': v.innerHTML = ph('📈 数据报表','订单量趋势、流水统计、代练员绩效'); break;
+    case 'cs-dashboard': v.innerHTML = renderCSDashboard(); break;
+    case 'cs-logs': v.innerHTML = ph('📝 操作日志','全量订单操作审计日志'); break;
+    case 'booster-dashboard': v.innerHTML = renderBoosterDashboard(); break;
+    case 'order-pool': v.innerHTML = renderOrderPool(); break;
+    case 'my-orders': v.innerHTML = renderMyOrders(); break;
+    case 'my-earnings': v.innerHTML = renderMyEarnings(); break;
+    case 'withdraw': v.innerHTML = renderWithdraw(); break;
+    default: v.innerHTML = ph('建设中','功能开发中');
+  }
+  c.appendChild(v);
+  bindInteractions();
+}
+
+function ph(t,d){ return '<div class="panel"><div class="panel-bd" style="text-align:center;padding:80px 20px;color:#999;"><div style="font-size:48px;margin-bottom:16px;">🚧</div><div style="font-size:16px;margin-bottom:8px;">'+t+'</div><div>'+d+'</div></div></div>'; }
+
+// ==================== 仪表盘 ====================
+function renderOpsDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('order-list')"><div class="l">今日新增订单</div><div class="v">12</div><div class="s" style="color:#52c41a;">↑ 20% 较昨日</div></div>
+      <div class="stat-card" onclick="navigate('order-list')"><div class="l">执行中订单</div><div class="v" style="color:#fa8c16;">28</div><div class="s" style="color:#999;">待验收 6 单</div></div>
+      <div class="stat-card"><div class="l">今日流水</div><div class="v" style="color:#52c41a;">¥8,920</div><div class="s" style="color:#999;">待结算 ¥3,200</div></div>
+      <div class="stat-card" onclick="navigate('booster-mgmt')"><div class="l">在册代练员</div><div class="v" style="color:#1890ff;">15</div><div class="s" style="color:#52c41a;">在线 8 人</div></div>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card" onclick="openImportModal()" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:#e6f7ff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">➕</div>
+        <div><div style="font-size:14px;font-weight:500;">录入订单</div><div style="font-size:11px;color:#999;">手动录入 / Excel导入 / API导入</div></div>
+      </div>
+      <div class="stat-card" style="display:flex;align-items:center;gap:12px;" onclick="switchRole('cs')">
+        <div style="width:40px;height:40px;background:#fff7e6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔍</div>
+        <div><div style="font-size:14px;font-weight:500;">待审核 5 单</div><div style="font-size:11px;color:#999;">切换客服角色处理</div></div>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-hd">最近订单<a class="link" onclick="navigate('order-list')">查看全部 →</a></div>
+      <div class="panel-bd nopad">
+        <table><thead><tr><th>订单号</th><th>服务</th><th>来源</th><th>客户</th><th>金额</th><th>状态</th><th>时间</th></tr></thead><tbody>
+          <tr class="clickable" onclick="navigate('order-list')"><td class="link">#DF20260519001</td><td>排位上分</td><td><span class="tag tag-o">私域</span></td><td>张先生</td><td>¥298</td><td><span class="tag tag-gray">待审核</span></td><td>10:32</td></tr>
+          <tr class="clickable" onclick="navigate('order-list')"><td class="link">#DF20260519002</td><td>任务代打</td><td><span class="tag tag-b">咸鱼</span></td><td>李四</td><td>¥150</td><td><span class="tag tag-b">执行中</span></td><td>昨天</td></tr>
+          <tr class="clickable" onclick="navigate('order-list')"><td class="link">#DF20260519003</td><td>装备刷取</td><td><span class="tag tag-g">三方</span></td><td>赵六</td><td>¥520</td><td><span class="tag tag-o">待验收</span></td><td>05-17</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== 订单数据集 ====================
+var orderDataset = [
+  {id:'#DF20260519001',game:'三角洲',svc:'排位上分',cust:'张先生',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥298',booster:'-',status:'待审核',statusTag:'tag-gray',time:'05-19 10:32'},
+  {id:'#DF20260519015',game:'三角洲',svc:'排位上分',cust:'匿名用户',src:'咸鱼',srcTag:'tag-b',type:'线上接单',typeTag:'tag-p',amt:'¥200',booster:'-',status:'待审核',statusTag:'tag-gray',time:'05-19 11:45'},
+  {id:'#DF20260519008',game:'三角洲',svc:'任务代打',cust:'匿名',src:'咸鱼',srcTag:'tag-b',type:'线上接单',typeTag:'tag-p',amt:'¥200',booster:'-',status:'待审核',statusTag:'tag-gray',time:'05-19 11:15'},
+  {id:'#DF20260519011',game:'三角洲',svc:'账号练级',cust:'匿名',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥650',booster:'-',status:'待审核',statusTag:'tag-gray',time:'05-19 11:50'},
+  {id:'#DF20260519020',game:'三角洲',svc:'装备刷取',cust:'孙七',src:'私域',srcTag:'tag-o',type:'派单',typeTag:'tag-p',amt:'¥380',booster:'-',status:'待审核',statusTag:'tag-gray',time:'05-19 13:00'},
+  {id:'#DF20260518005',game:'三角洲',svc:'排位上分',cust:'周八',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥350',booster:'-',status:'待接单',statusTag:'tag-gray',time:'05-18 16:00'},
+  {id:'#DF20260518007',game:'三角洲',svc:'任务代打',cust:'吴九',src:'咸鱼',srcTag:'tag-b',type:'线上接单',typeTag:'tag-p',amt:'¥180',booster:'-',status:'待接单',statusTag:'tag-gray',time:'05-18 17:20'},
+  {id:'#DF20260518009',game:'三角洲',svc:'账号练级',cust:'郑十',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥720',booster:'-',status:'待接单',statusTag:'tag-gray',time:'05-18 18:00'},
+  {id:'#DF20260518010',game:'三角洲',svc:'装备刷取',cust:'匿名',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥420',booster:'-',status:'待接单',statusTag:'tag-gray',time:'05-18 19:30'},
+  {id:'#DF20260519002',game:'三角洲',svc:'任务代打',cust:'李四',src:'咸鱼',srcTag:'tag-b',type:'派单',typeTag:'tag-p',amt:'¥150',booster:'王代练',status:'执行中',statusTag:'tag-b',time:'05-18 14:20'},
+  {id:'#DF20260518012',game:'三角洲',svc:'排位上分',cust:'匿名',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥200',booster:'王代练',status:'执行中',statusTag:'tag-b',time:'05-18 15:00'},
+  {id:'#DF20260517008',game:'三角洲',svc:'任务代打',cust:'李四',src:'咸鱼',srcTag:'tag-b',type:'派单',typeTag:'tag-p',amt:'¥150',booster:'刘代练',status:'执行中',statusTag:'tag-b',time:'05-17 10:00'},
+  {id:'#DF20260518003',game:'三角洲',svc:'账号练级',cust:'匿名',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥680',booster:'陈代练',status:'执行中',statusTag:'tag-b',time:'05-18 09:00'},
+  {id:'#DF20260519003',game:'三角洲',svc:'装备刷取',cust:'赵六',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥520',booster:'刘代练',status:'待验收',statusTag:'tag-o',time:'05-17 09:15'},
+  {id:'#DF20260517005',game:'三角洲',svc:'排位上分',cust:'匿名',src:'私域',srcTag:'tag-o',type:'派单',typeTag:'tag-p',amt:'¥350',booster:'王代练',status:'待验收',statusTag:'tag-o',time:'05-18 20:00'},
+  {id:'#DF20260516002',game:'三角洲',svc:'任务代打',cust:'匿名',src:'咸鱼',srcTag:'tag-b',type:'线上接单',typeTag:'tag-p',amt:'¥220',booster:'陈代练',status:'待验收',statusTag:'tag-o',time:'05-19 08:00'},
+  {id:'#DF20260515008',game:'三角洲',svc:'排位上分',cust:'匿名',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥450',booster:'刘代练',status:'待结算',statusTag:'tag-r',time:'05-15 16:30'},
+  {id:'#DF20260514006',game:'三角洲',svc:'账号练级',cust:'匿名',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥880',booster:'王代练',status:'待结算',statusTag:'tag-r',time:'05-14 12:00'},
+  {id:'#DF20260513004',game:'三角洲',svc:'装备刷取',cust:'匿名',src:'咸鱼',srcTag:'tag-b',type:'派单',typeTag:'tag-p',amt:'¥600',booster:'陈代练',status:'待结算',statusTag:'tag-r',time:'05-13 18:00'},
+  {id:'#DF20260519004',game:'三角洲',svc:'账号练级',cust:'王五',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥880',booster:'陈代练',status:'已完成',statusTag:'tag-g',time:'05-16 08:30'},
+  {id:'#DF20260510001',game:'三角洲',svc:'排位上分',cust:'匿名',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥300',booster:'王代练',status:'已完成',statusTag:'tag-g',time:'05-10 14:00'},
+];
+
+// ==================== 订单列表（运营/客服共用，按角色+状态tab显隐操作） ====================
+function renderOrderList(role, activeTab) {
+  if (!activeTab) activeTab = '全部';
+
+  var showActions = role === 'cs';
+  var actionHeader = showActions ? '<th>操作</th>' : '';
+  var allTabs = ['全部','待审核','待接单','执行中','待验收','待结算','已完成'];
+
+  // 统计各状态数量
+  var counts = {}; allTabs.forEach(function(t){ counts[t]=0; });
+  orderDataset.forEach(function(o){ counts[o.status]++; counts['全部']++; });
+
+  // 过滤数据
+  var filtered = activeTab === '全部' ? orderDataset : orderDataset.filter(function(o){ return o.status === activeTab; });
+
+  var tabsHtml = allTabs.map(function(t) {
+    var cls = t === activeTab ? ' class="tab active"' : ' class="tab"';
+    return '<a'+cls+' data-tab="'+t+'" onclick="navigateOrderTab(\''+t+'\')">'+t+'<span class="cnt">'+counts[t]+'</span></a>';
+  }).join('');
+
+  function srcTag(t) { return '<span class="tag '+t+'">'+o.src+'</span>'; }
+  function actionCell(status) {
+    if (!showActions) return '';
+    switch(status) {
+      case '待审核': return '<a class="btn btn-xs btn-p" onclick="auditOrder(event)">审核</a> <a class="btn btn-xs btn-d" onclick="cancelOrder(event)">关单</a>';
+      case '待验收': return '<a class="btn btn-xs btn-s" onclick="verifyPass(event)">通过</a> <a class="btn btn-xs btn-d" onclick="verifyReject(event)">退回</a>';
+      case '待结算': return '<a class="btn btn-xs btn-s" onclick="doSettle(event)">确认结算</a>';
+      default: return '<a class="btn btn-xs" onclick="toDetail2(event)">查看</a>';
+    }
+  }
+
+  var rowsHtml = filtered.map(function(o) {
+    var tagCls = o.srcTag || 'tag-o';
+    return '<tr><td class="link" onclick="toDetailRow(event,\''+o.id+'\')">'+o.id+'</td><td>'+o.game+'</td><td>'+o.svc+'</td><td>'+o.cust+'</td><td><span class="tag '+o.srcTag+'">'+o.src+'</span></td><td><span class="tag '+o.typeTag+'">'+o.type+'</span></td><td>'+o.amt+'</td><td>'+o.booster+'</td><td><span class="tag '+o.statusTag+'">'+o.status+'</span></td><td>'+o.time+'</td>'+(showActions?'<td>'+actionCell(o.status)+'</td>':'')+'</tr>';
+  }).join('');
+
+  return `
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="btn-group">
+        ${role==='ops'?'<div style="position:relative;display:inline-block;"><button class="btn btn-p" onclick="toggleImportMenu(event)" style="display:flex;align-items:center;gap:4px;">+ 录入订单 <span style="font-size:10px;">▾</span></button><div id="import-menu" style="position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #e8e8e8;border-radius:6px;padding:4px;min-width:170px;display:none;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,0.1);"><div class="import-menu-item" onclick="openImportModal(\'manual\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;font-size:13px;">✍️ 手动录入</div><div class="import-menu-item" onclick="openImportModal(\'excel\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;font-size:13px;">📎 Excel 导入</div><div class="import-menu-item" onclick="openImportModal(\'api\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;font-size:13px;">🔗 API 导入</div></div></div>':''}
+        <button class="btn">导出</button>
+      </div>
+      <div style="display:flex;gap:6px;"><input class="form-input" style="width:200px;" placeholder="搜索订单号/客户..."><button class="btn btn-p">搜索</button></div>
+    </div>
+    <div class="tabs" id="order-tabs">${tabsHtml}</div>
+    <div class="panel"><div class="panel-bd nopad">
+      <table><thead><tr><th>订单号</th><th>游戏</th><th>服务</th><th>客户</th><th>来源</th><th>类型</th><th>金额</th><th>代练员</th><th>状态</th><th>时间</th>${actionHeader}</tr></thead><tbody>
+        ${rowsHtml}
+      </tbody></table>
+    </div></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#999;padding-top:8px;"><span>共 ${filtered.length} 条</span></div>
+  `;
+}
+
+function navigateOrderTab(tab) {
+  currentTab = tab;
+  renderSidebar();
+  renderContent();
+}
+
+// ==================== 导入弹出菜单 ====================
+function toggleImportMenu(e) {
+  e.stopPropagation();
+  var menu = document.getElementById('import-menu');
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  // 关闭角色菜单
+  document.getElementById('role-menu').classList.remove('show');
+}
+
+// Hover样式
+document.addEventListener('click', function() {
+  var m = document.getElementById('import-menu');
+  if (m) m.style.display = 'none';
+});
+
+// 导入菜单项hover
+function bindImportMenuHover() {
+  document.querySelectorAll('.import-menu-item').forEach(function(item) {
+    item.addEventListener('mouseenter', function() { this.style.background = '#f5f5f5'; });
+    item.addEventListener('mouseleave', function() { this.style.background = 'transparent'; });
+  });
+}
+
+// ==================== 模态框系统 ====================
+function openModal(html, wide) {
+  var overlay = document.getElementById('modal-overlay');
+  var modal = document.getElementById('modal');
+  document.getElementById('modal-content').innerHTML = html;
+  if (wide) modal.classList.add('wide'); else modal.classList.remove('wide');
+  overlay.classList.add('show');
+  bindInteractions();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ==================== 打开导入模态框 ====================
+function openImportModal(mode) {
+  currentImportMode = mode || 'manual';
+  var menu = document.getElementById('import-menu');
+  if (menu) menu.style.display = 'none';
+
+  if (currentImportMode === 'manual') {
+    openModal(renderManualEntry(), false);
+  } else if (currentImportMode === 'excel') {
+    openModal(renderExcelImport(), true);
+  } else if (currentImportMode === 'api') {
+    openModal(renderApiImport(), false);
+  }
+}
+
+// ==================== 手动录入表单 ====================
+function renderManualEntry() {
+  return `
+    <div class="modal-hd"><h3>✍️ 手动录入订单</h3><span class="close" onclick="closeModal()">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-group"><div class="form-label">订单来源 <span class="req">*</span></div>
+        <div class="opt-group" id="entry-source">
+          <span class="opt-item sel" data-val="私域">私域（客户预付）</span>
+          <span class="opt-item" data-val="咸鱼">咸鱼（完成后回款）</span>
+          <span class="opt-item" data-val="三方平台">三方平台（完成后回款）</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">游戏 <span class="req">*</span></div><select class="form-input"><option>三角洲</option></select></div>
+        <div class="form-group"><div class="form-label">服务类型 <span class="req">*</span></div><select class="form-input" id="entry-svc"><option>排位上分</option><option>任务代打</option><option>账号练级</option><option>装备刷取</option></select></div>
+        <div class="form-group"><div class="form-label">扣子类型</div><select class="form-input"><option>青铜→钻石</option><option>排位保护</option><option>段位重置后定级</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">订单类型 <span class="req">*</span></div>
+          <div class="opt-group" id="entry-type"><span class="opt-item sel" data-val="线上接单">线上接单</span><span class="opt-item" data-val="派单">派单</span></div>
+        </div>
+        <div class="form-group" id="entry-assign" style="display:none;"><div class="form-label">指定代练员/工会</div><select class="form-input"><option value="">请选择...</option><option>王代练</option><option>刘代练</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">订单金额 <span class="req">*</span></div>
+          <div style="display:flex;"><span style="padding:7px 10px;background:#fafafa;border:1px solid #d9d9d9;border-right:0;border-radius:4px 0 0 4px;color:#999;">¥</span><input class="form-input" style="border-radius:0 4px 4px 0;" placeholder="金额" type="number"></div>
+        </div>
+        <div class="form-group"><div class="form-label">付款方式 <span class="req">*</span></div><select class="form-input" id="entry-pay"><option>预付（客户已付）</option><option>后付（完成后收款）</option></select></div>
+      </div>
+      <hr>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">客户姓名 <span class="req">*</span></div><input class="form-input" placeholder="客户称呼"></div>
+        <div class="form-group"><div class="form-label">联系方式</div><input class="form-input" placeholder="微信 / 手机号"></div>
+      </div>
+      <div class="form-group"><div class="form-label">需求描述</div><textarea class="form-input" placeholder="段位要求、时限、特殊说明..."></textarea></div>
+      <div class="form-group"><div class="form-label">内部备注</div><textarea class="form-input" placeholder="内部备注，客户不可见..."></textarea></div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeModal()">取消</button><button class="btn">保存草稿</button><button class="btn btn-p" onclick="closeModal();showToast('✓ 订单已提交审核','#52c41a')">提交审核</button></div>
+  `;
+}
+
+// ==================== Excel导入 ====================
+function renderExcelImport() {
+  return `
+    <div class="modal-hd"><h3>📎 Excel 导入订单</h3><span class="close" onclick="closeModal()">✕</span></div>
+    <div class="modal-bd">
+      <!-- 步骤条 -->
+      <div class="steps" style="margin-bottom:20px;">
+        <div class="step"><span class="c done">1</span>上传文件<span class="l done"></span></div>
+        <div class="step"><span class="c cur">2</span>字段映射<span class="l"></span></div>
+        <div class="step"><span class="c wait">3</span>预览确认<span class="l"></span></div>
+        <div class="step"><span class="c wait">4</span>导入完成</div>
+      </div>
+
+      <!-- Step 1: 上传 -->
+      <div class="form-group"><div class="form-label">选择 Excel 文件 <span class="req">*</span></div>
+        <div class="upload-zone" onclick="showToast('📎 已加载示例：代练订单_20260519.xlsx（模拟）','#1890ff')">
+          <div class="ic">📎</div>
+          <div style="font-size:13px;color:#666;">点击上传 或 拖拽 .xlsx / .csv 文件</div>
+          <div style="font-size:11px;color:#999;margin-top:4px;">支持 .xlsx、.xls、.csv，单文件不超过 10MB</div>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px;font-size:12px;color:#52c41a;background:#f6ffed;padding:8px;border-radius:4px;">
+          📎 <span style="color:#333;">代练订单_20260519.xlsx</span> — 检测到 3 条订单记录，6 列数据
+        </div>
+      </div>
+
+      <!-- Step 2: 字段映射 -->
+      <div style="margin-bottom:14px;"><div class="form-label">字段映射 <span class="req">*</span><span style="font-weight:400;color:#999;">（将Excel列映射到系统字段）</span></div></div>
+      <div style="margin-bottom:16px;">
+        <div class="mapping-row"><span class="col-name">Excel: 客户姓名</span><span class="arrow-icon">→</span><select class="form-input"><option>客户姓名</option><option>-- 忽略此列 --</option></select></div>
+        <div class="mapping-row"><span class="col-name">Excel: 联系方式</span><span class="arrow-icon">→</span><select class="form-input"><option>联系方式</option><option>-- 忽略此列 --</option></select></div>
+        <div class="mapping-row"><span class="col-name">Excel: 服务类型</span><span class="arrow-icon">→</span><select class="form-input" style="border-color:#52c41a;"><option>服务类型 ✓ 已匹配</option></select></div>
+        <div class="mapping-row"><span class="col-name">Excel: 需求描述</span><span class="arrow-icon">→</span><select class="form-input"><option>需求描述</option><option>-- 忽略此列 --</option></select></div>
+        <div class="mapping-row"><span class="col-name">Excel: 订单金额</span><span class="arrow-icon">→</span><select class="form-input" style="border-color:#52c41a;"><option>订单金额 ✓ 已匹配</option></select></div>
+        <div class="mapping-row"><span class="col-name">Excel: 备注</span><span class="arrow-icon">→</span><select class="form-input"><option>内部备注</option><option>-- 忽略此列 --</option></select></div>
+      </div>
+
+      <!-- 默认值 -->
+      <div class="form-row" style="margin-bottom:16px;">
+        <div class="form-group"><div class="form-label">默认游戏</div><select class="form-input"><option>三角洲</option></select></div>
+        <div class="form-group"><div class="form-label">默认来源</div><select class="form-input"><option>咸鱼</option><option>私域</option><option>三方平台</option></select></div>
+        <div class="form-group"><div class="form-label">默认订单类型</div><select class="form-input"><option>线上接单</option><option>派单</option></select></div>
+        <div class="form-group"><div class="form-label">默认付款方式</div><select class="form-input"><option>后付（完成后收款）</option><option>预付（客户已付）</option></select></div>
+      </div>
+
+      <!-- Step 3: 预览 -->
+      <div style="margin-bottom:8px;"><div class="form-label">数据预览（3条）</div></div>
+      <div class="preview-table-wrap">
+        <table><thead><tr><th>客户姓名</th><th>联系方式</th><th>服务类型</th><th>需求描述</th><th>金额</th><th>来源</th><th>类型</th><th>付款</th></tr></thead><tbody>
+          <tr><td>张三</td><td>zhangsan_wx</td><td>排位上分</td><td>黄金→铂金，3天</td><td>¥200</td><td>咸鱼</td><td>线上接单</td><td>后付</td></tr>
+          <tr><td>李四</td><td>lisi_001</td><td>任务代打</td><td>周常全清</td><td>¥120</td><td>咸鱼</td><td>线上接单</td><td>后付</td></tr>
+          <tr><td>王五</td><td>wangwu</td><td>装备刷取</td><td>指定套装x2</td><td>¥450</td><td>咸鱼</td><td>派单</td><td>后付</td></tr>
+        </tbody></table>
+      </div>
+      <div class="tip"><strong>⚠️ 注意：</strong>Excel中的空字段将使用默认值填充。导入后订单状态为「待审核」。</div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeModal()">取消</button><button class="btn">保存映射模板</button><button class="btn btn-p" onclick="closeModal();showToast('✓ 成功导入 3 条订单，已进入待审核队列','#52c41a')">确认导入 3 条</button></div>
+  `;
+}
+
+// ==================== API导入 ====================
+function renderApiImport() {
+  return `
+    <div class="modal-hd"><h3>🔗 API 导入订单</h3><span class="close" onclick="closeModal()">✕</span></div>
+    <div class="modal-bd">
+      <div class="form-group"><div class="form-label">数据来源</div>
+        <div class="opt-group" id="api-source">
+          <span class="opt-item sel" data-val="url">HTTP 接口地址</span>
+          <span class="opt-item" data-val="webhook">Webhook 推送</span>
+        </div>
+      </div>
+
+      <div id="api-url-section">
+        <div class="form-group"><div class="form-label">接口 URL <span class="req">*</span></div>
+          <input class="form-input" placeholder="https://example.com/api/orders" value="https://api.xianyu.example.com/orders?shop_id=12345">
+        </div>
+        <div class="form-row">
+          <div class="form-group"><div class="form-label">请求方式</div>
+            <select class="form-input"><option>GET</option><option>POST</option></select>
+          </div>
+          <div class="form-group"><div class="form-label">认证方式</div>
+            <select class="form-input"><option>Bearer Token</option><option>API Key (Header)</option><option>Basic Auth</option><option>无</option></select>
+          </div>
+        </div>
+        <div class="form-group" id="api-token-group"><div class="form-label">Token / Key</div>
+          <input class="form-input" placeholder="sk-xxxxxxxx" value="sk-xianyu-2026••••••••" type="password">
+        </div>
+        <div class="form-group"><div class="form-label">响应数据路径（JSONPath）<span style="font-weight:400;color:#999;"> — 从接口响应中提取订单数组</span></div>
+          <input class="form-input" placeholder="$.data.orders" value="$.data.order_list">
+        </div>
+      </div>
+
+      <div id="api-webhook-section" style="display:none;">
+        <div class="form-group"><div class="form-label">Webhook 接收地址<span style="font-weight:400;color:#999;">（自动生成，供外部平台回调）</span></div>
+          <div style="display:flex;"><input class="form-input" value="https://api.dailian.com/webhook/xianyu" readonly style="background:#fafafa;color:#666;"><button class="btn btn-p" style="border-radius:0 4px 4px 0;" onclick="showToast('📋 已复制 Webhook 地址')">复制</button></div>
+        </div>
+        <div class="tip"><strong>💡 使用说明：</strong>将此地址配置到外部平台（如咸鱼卖家中心）的订单通知回调中。当有新订单时，平台会推送订单数据到此地址，系统自动解析并创建订单。</div>
+      </div>
+
+      <hr>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">默认游戏</div><select class="form-input"><option>三角洲</option></select></div>
+        <div class="form-group"><div class="form-label">默认来源</div><select class="form-input"><option>咸鱼</option><option>三方平台</option></select></div>
+        <div class="form-group"><div class="form-label">默认订单类型</div><select class="form-input"><option>线上接单</option><option>派单</option></select></div>
+      </div>
+
+      <div class="form-group"><div class="form-label">接口字段映射 <span style="font-weight:400;color:#999;">（将API返回字段映射到系统字段，可保存为模板）</span></div>
+        <div class="mapping-row"><span class="col-name">customer_name</span><span class="arrow-icon">→</span><select class="form-input" style="border-color:#52c41a;"><option>客户姓名 ✓ 已匹配</option></select></div>
+        <div class="mapping-row"><span class="col-name">contact</span><span class="arrow-icon">→</span><select class="form-input"><option>联系方式</option><option>-- 忽略 --</option></select></div>
+        <div class="mapping-row"><span class="col-name">service</span><span class="arrow-icon">→</span><select class="form-input"><option>服务类型</option><option>-- 忽略 --</option></select></div>
+        <div class="mapping-row"><span class="col-name">price</span><span class="arrow-icon">→</span><select class="form-input" style="border-color:#52c41a;"><option>订单金额 ✓ 已匹配</option></select></div>
+        <div class="mapping-row"><span class="col-name">description</span><span class="arrow-icon">→</span><select class="form-input"><option>需求描述</option><option>-- 忽略 --</option></select></div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">定时同步</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" checked> 启用自动同步</label>
+          <select class="form-input" style="width:auto;"><option>每 30 分钟</option><option>每 1 小时</option><option>每 2 小时</option><option>每天一次</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn" onclick="closeModal()">取消</button><button class="btn">保存配置</button><button class="btn btn-p" onclick="closeModal();showToast('✓ 接口配置已保存，将自动同步订单','#52c41a')">保存并立即拉取</button></div>
+  `;
+}
+
+// ==================== 其他视图 ====================
+function renderBoosterMgmt() {
+  return `
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="btn-group"><button class="btn btn-p">+ 添加代练员</button><button class="btn">导出列表</button></div>
+      <input class="form-input" style="width:200px;" placeholder="搜索代练员...">
+    </div>
+    <div class="panel"><div class="panel-bd nopad">
+      <table><thead><tr><th>姓名</th><th>联系方式</th><th>游戏特长</th><th>接单数</th><th>好评率</th><th>状态</th><th>操作</th></tr></thead><tbody>
+        <tr><td style="font-weight:500;">王代练</td><td>wang_001</td><td>三角洲·排位</td><td>43</td><td>98.5%</td><td><span class="tag tag-g">在线</span></td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+        <tr><td style="font-weight:500;">刘代练</td><td>liu_dailian</td><td>三角洲·刷取</td><td>28</td><td>96.2%</td><td><span class="tag tag-g">在线</span></td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+        <tr><td style="font-weight:500;">陈代练</td><td>chen_gg</td><td>三角洲·综合</td><td>35</td><td>99.1%</td><td><span class="tag tag-gray">离线</span></td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+        <tr><td style="font-weight:500;">三角洲工会A组</td><td>guild_a</td><td>三角洲·全类型</td><td>112</td><td>97.8%</td><td><span class="tag tag-g">在线</span></td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderCSDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('order-list-cs','待审核')"><div class="l">待审核订单</div><div class="v" style="color:#f5222d;">5</div><div class="s">尽快处理</div></div>
+      <div class="stat-card" onclick="navigate('order-list-cs','待验收')"><div class="l">待验收订单</div><div class="v" style="color:#fa8c16;">6</div><div class="s">代练已提交</div></div>
+      <div class="stat-card" onclick="navigate('order-list-cs','待结算')"><div class="l">待结算订单</div><div class="v" style="color:#1890ff;">3</div><div class="s">¥3,200</div></div>
+      <div class="stat-card"><div class="l">今日审核通过</div><div class="v" style="color:#52c41a;">18</div><div class="s">驳回 2 单</div></div>
+    </div>
+  `;
+}
+
+
+function renderBoosterDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('my-orders')"><div class="l">执行中订单</div><div class="v" style="color:#1890ff;">3</div><div class="s">共完成 127 单</div></div>
+      <div class="stat-card"><div class="l">今日收益</div><div class="v" style="color:#52c41a;">¥520</div><div class="s" style="color:#52c41a;">↑ 15%</div></div>
+      <div class="stat-card" onclick="navigate('withdraw')"><div class="l">账户余额</div><div class="v">¥2,350</div><div class="s" style="color:#1890ff;">可提现 →</div></div>
+      <div class="stat-card"><div class="l">好评率</div><div class="v" style="color:#fa8c16;">98.5%</div><div class="s">125/127</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">进行中的订单<a class="link" onclick="navigate('my-orders')">查看全部 →</a></div>
+      <div class="panel-bd nopad">
+        <table><thead><tr><th>订单号</th><th>服务</th><th>客户</th><th>金额</th><th>进度</th><th>操作</th></tr></thead><tbody>
+          <tr class="clickable" onclick="navigate('my-orders')"><td class="link">#DF20260518012</td><td>排位上分</td><td>匿名</td><td>¥200</td><td>黄金3→铂金1 · 60%</td><td><a class="btn btn-xs">进度</a></td></tr>
+          <tr class="clickable" onclick="navigate('my-orders')"><td class="link">#DF20260515003</td><td>账号练级</td><td>王五</td><td>¥880</td><td>Lv.35/40 · 88%</td><td><a class="btn btn-xs btn-w">交付</a></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  `;
+}
+
+function renderOrderPool() {
+  return `
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <select class="form-input" style="width:auto;"><option>全部游戏</option><option>三角洲</option></select>
+      <select class="form-input" style="width:auto;"><option>全部类型</option><option>排位上分</option><option>任务代打</option><option>账号练级</option><option>装备刷取</option></select>
+      <select class="form-input" style="width:auto;"><option>按时间</option><option>金额高→低</option></select>
+    </div>
+    <div class="panel"><div class="panel-hd">🆕 可接订单（8单）</div><div class="panel-bd nopad">
+      <table><thead><tr><th>订单号</th><th>服务</th><th>扣子</th><th>金额</th><th>来源</th><th>时限</th><th>发布</th><th>操作</th></tr></thead><tbody>
+        <tr><td>#DF20260519005</td><td>排位上分</td><td>铂金→钻石</td><td>¥350</td><td><span class="tag tag-o">私域</span></td><td>3天</td><td>5分钟前</td><td><a class="btn btn-xs btn-p" onclick="showToast('✓ 已接单','#52c41a')">接单</a></td></tr>
+        <tr><td>#DF20260519006</td><td>装备刷取</td><td>指定装备x3</td><td>¥520</td><td><span class="tag tag-g">三方</span></td><td>7天</td><td>12分钟前</td><td><a class="btn btn-xs btn-p" onclick="showToast('✓ 已接单','#52c41a')">接单</a></td></tr>
+        <tr><td>#DF20260519007</td><td>排位上分</td><td>黄金→铂金</td><td>¥200</td><td><span class="tag tag-o">私域</span></td><td>5天</td><td>25分钟前</td><td><a class="btn btn-xs btn-p" onclick="showToast('✓ 已接单','#52c41a')">接单</a></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderMyOrders() {
+  return `
+    <div class="panel"><div class="panel-hd">📝 我的订单</div><div class="panel-bd nopad">
+      <table><thead><tr><th>订单号</th><th>服务</th><th>来源</th><th>金额</th><th>我的收益</th><th>接单时间</th><th>状态</th><th>操作</th></tr></thead><tbody>
+        <tr class="clickable"><td class="link" onclick="showOrderExec('#DF20260518012')">#DF20260518012</td><td>排位上分</td><td><span class="tag tag-o">私域</span></td><td>¥200</td><td>¥140</td><td>05-18</td><td><span class="tag tag-b">执行中</span></td><td><a class="btn btn-xs">进度</a> <a class="btn btn-xs btn-w" onclick="showOrderExec('#DF20260518012')">交付</a></td></tr>
+        <tr class="clickable"><td class="link">#DF20260515003</td><td>账号练级</td><td><span class="tag tag-o">私域</span></td><td>¥880</td><td>¥616</td><td>05-15</td><td><span class="tag tag-o">待验收</span></td><td><span style="font-size:11px;color:#999;">等待客服验收</span></td></tr>
+        <tr><td>#DF20260510001</td><td>排位上分</td><td><span class="tag tag-g">三方</span></td><td>¥300</td><td>¥210</td><td>05-10</td><td><span class="tag tag-g">已完成</span></td><td><span style="font-size:11px;color:#52c41a;">已结算 ✓</span></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function showOrderExec(oid) {
+  var c = document.getElementById('content-area');
+  c.innerHTML = '<div class="view active">' + `
+    <div class="panel"><div class="panel-hd">${oid} — 排位上分 · 黄金3→铂金1 <span class="tag tag-b">执行中</span></div><div class="panel-bd">
+      <div style="display:flex;gap:14px;margin-bottom:16px;">
+        <div style="flex:1;background:#fafafa;border-radius:8px;padding:14px;">
+          <div style="font-size:11px;color:#999;margin-bottom:8px;">订单信息</div>
+          <div style="font-size:12px;">
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:#999;">金额</span><span style="font-weight:500;">¥200</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:#999;">我的收益</span><span style="color:#52c41a;">¥140（70%）</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="color:#999;">时限</span><span style="color:#fa8c16;">剩余 2 天</span></div>
+          </div>
+        </div>
+        <div style="flex:2;background:#fafafa;border-radius:8px;padding:14px;">
+          <div style="font-size:11px;color:#999;margin-bottom:8px;">客户要求</div>
+          <p style="font-size:12px;color:#666;line-height:1.6;">黄金3打到铂金1，排位模式，不要掉分，不要挂机，不要动设置和外观，完成截图排位结算页面</p>
+        </div>
+      </div>
+      <div class="panel" style="border:1px solid #f0f0f0;box-shadow:none;">
+        <div class="panel-hd">📤 更新进度</div>
+        <div class="panel-bd">
+          <div class="form-group"><div class="form-label">进度描述</div><textarea class="form-input" placeholder="如：已打上铂金5..."></textarea></div>
+          <div class="form-group"><div class="form-label">上传截图/录屏</div>
+            <div class="upload-zone" onclick="showToast('📎 文件已上传','#1890ff')"><div class="ic">📎</div><div style="font-size:13px;color:#666;">点击上传或拖拽</div></div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;"><button class="btn" onclick="showToast('进度已保存','#1890ff')">保存进度</button><button class="btn btn-w" onclick="showToast('📤 交付物已提交','#fa8c16')">提交交付</button></div>
+        </div>
+      </div>
+    </div></div>
+  ` + '</div>';
+  bindInteractions();
+  document.getElementById('page-title').textContent = '🎮 订单执行详情';
+}
+
+function renderMyEarnings() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('withdraw')"><div class="l">账户余额</div><div class="v">¥2,350</div><div class="s" style="color:#1890ff;">可提现 →</div></div>
+      <div class="stat-card"><div class="l">本月收益</div><div class="v" style="color:#52c41a;">¥8,450</div><div class="s">22 单</div></div>
+      <div class="stat-card"><div class="l">待结算</div><div class="v" style="color:#fa8c16;">¥756</div><div class="s">3 单</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">📋 结算记录</div><div class="panel-bd nopad">
+      <table><thead><tr><th>结算时间</th><th>订单号</th><th>订单金额</th><th>分成</th><th>结算金额</th><th>状态</th></tr></thead><tbody>
+        <tr><td>05-14 16:00</td><td>#DF20260510001</td><td>¥300</td><td>70%</td><td style="color:#52c41a;">¥210</td><td><span class="tag tag-g">已到账</span></td></tr>
+        <tr><td>05-12 10:30</td><td>#DF2026050805</td><td>¥450</td><td>70%</td><td style="color:#52c41a;">¥315</td><td><span class="tag tag-g">已到账</span></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderWithdraw() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card"><div class="l">可提现余额</div><div class="v" style="color:#52c41a;">¥2,350</div><div class="s">累计收益 ¥32,150</div></div>
+      <div class="stat-card"><div class="l">待结算</div><div class="v" style="color:#fa8c16;">¥756</div><div class="s">暂不可提</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">💳 发起提现</div><div class="panel-bd">
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">收款方式</div>
+          <div class="opt-group" id="withdraw-method">
+            <span class="opt-item sel" data-val="wechat">微信</span>
+            <span class="opt-item" data-val="alipay">支付宝</span>
+            <span class="opt-item" data-val="bank">银行卡</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" id="wd-wechat"><div class="form-label">微信账号</div><input class="form-input" value="wang_dailian" disabled style="color:#999;"></div>
+        <div class="form-group" id="wd-alipay" style="display:none;"><div class="form-label">支付宝账号</div><input class="form-input" placeholder="请输入支付宝账号"></div>
+        <div class="form-group" id="wd-bank" style="display:none;"><div class="form-label">银行卡号</div><input class="form-input" placeholder="请输入银行卡号"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">提现金额 <span class="req">*</span></div>
+          <div style="display:flex;"><span style="padding:7px 10px;background:#fafafa;border:1px solid #d9d9d9;border-right:0;border-radius:4px 0 0 4px;color:#999;">¥</span><input class="form-input" style="border-radius:0 4px 4px 0;" placeholder="可提 ¥2,350" type="number" id="withdraw-amount"></div>
+        </div>
+        <div class="form-group"><div class="form-label">&nbsp;</div>
+          <div style="display:flex;gap:6px;padding-top:4px;">
+            <span class="btn btn-xs" onclick="document.getElementById('withdraw-amount').value='500'">¥500</span>
+            <span class="btn btn-xs" onclick="document.getElementById('withdraw-amount').value='1000'">¥1,000</span>
+            <span class="btn btn-xs" onclick="document.getElementById('withdraw-amount').value='2350'">全部</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:8px;">
+        <button class="btn btn-p" onclick="showToast('✓ 提现申请已提交，预计1-2个工作日到账','#52c41a')">确认提现</button>
+      </div>
+    </div></div>
+    <div class="panel"><div class="panel-hd">📋 提现记录</div><div class="panel-bd nopad">
+      <table><thead><tr><th>申请时间</th><th>金额</th><th>收款方式</th><th>账号</th><th>状态</th></tr></thead><tbody>
+        <tr><td>05-10 14:00</td><td style="color:#52c41a;">¥1,500</td><td>微信</td><td>wang***</td><td><span class="tag tag-g">已到账</span></td></tr>
+        <tr><td>04-28 16:00</td><td style="color:#52c41a;">¥2,000</td><td>微信</td><td>wang***</td><td><span class="tag tag-g">已到账</span></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+// 订单列表行内操作辅助函数
+function toDetailRow(e, oid) { e.stopPropagation(); showToast('📋 查看订单详情 ' + oid, '#1890ff'); }
+function auditOrder(e) { e.stopPropagation(); showToast('🔍 进入审核...', '#1890ff'); }
+function verifyPass(e) { e.stopPropagation(); showToast('✓ 验收通过，已进入待结算', '#52c41a'); }
+function verifyReject(e) { e.stopPropagation(); showToast('↩ 已退回代练员修改', '#f5222d'); }
+function doSettle(e) { e.stopPropagation(); showToast('✓ 结算完成', '#52c41a'); }
+function cancelOrder(e) { e.stopPropagation(); showToast('订单已关闭', '#999'); }
+function toDetail2(e) { e.stopPropagation(); showToast('📋 查看订单详情', '#1890ff'); }
+
+// ===== 交互绑定 =====
+function bindInteractions() {
+  document.querySelectorAll('.opt-group').forEach(function(g) {
+    g.querySelectorAll('.opt-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        g.querySelectorAll('.opt-item').forEach(function(i) { i.classList.remove('sel'); });
+        this.classList.add('sel');
+        var v = this.getAttribute('data-val');
+        if (g.id === 'entry-type') { var a = document.getElementById('entry-assign'); if (a) a.style.display = v==='派单' ? '' : 'none'; }
+        if (g.id === 'entry-source') { var p = document.getElementById('entry-pay'); if (p) p.value = v==='私域' ? '预付（客户已付）' : '后付（完成后收款）'; }
+        if (g.id === 'withdraw-method') { ['wechat','alipay','bank'].forEach(function(k) { var e = document.getElementById('wd-'+k); if (e) e.style.display = 'none'; }); var t = document.getElementById('wd-'+v); if (t) t.style.display = ''; }
+        if (g.id === 'api-source') { var u = document.getElementById('api-url-section'); var w = document.getElementById('api-webhook-section'); if (u&&w) { u.style.display = v==='url'?'':'none'; w.style.display = v==='webhook'?'':'none'; } }
+      });
+    });
+  });
+  bindImportMenuHover();
+}
+
+// ===== Toast =====
+function showToast(msg, color) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color || '#52c41a'; t.style.display = 'block';
+  setTimeout(function() { t.style.display = 'none'; }, 2000);
+}
+
+// ===== 角色切换 =====
+function switchRole(role) {
+  currentRole = role;
+  currentTab = '全部';
+  updateRoleUI();
+  currentPage = role==='ops'?'dashboard':role==='cs'?'cs-dashboard':'booster-dashboard';
+  renderSidebar(); renderContent();
+}
+
+function updateRoleUI() {
+  var cfg = roleConfig[currentRole];
+  var dd = document.getElementById('role-dropdown');
+  dd.innerHTML = '<span class="rdot '+cfg.cssClass+'"></span> '+cfg.name+' <span class="arrow">▾</span>';
+  document.querySelectorAll('.role-menu-item').forEach(function(item) {
+    item.classList.remove('active');
+    if (item.getAttribute('data-role') === currentRole) item.classList.add('active');
+  });
+  document.getElementById('role-menu').classList.remove('show');
+}
+
+// ===== 角色下拉菜单 =====
+document.getElementById('role-dropdown').addEventListener('click', function(e) {
+  e.stopPropagation();
+  document.getElementById('role-menu').classList.toggle('show');
+  var m = document.getElementById('import-menu'); if (m) m.style.display = 'none';
+});
+
+document.querySelectorAll('.role-menu-item').forEach(function(item) {
+  item.addEventListener('click', function(e) {
+    e.stopPropagation();
+    switchRole(this.getAttribute('data-role'));
+  });
+});
+
+document.addEventListener('click', function() {
+  document.getElementById('role-menu').classList.remove('show');
+  var m = document.getElementById('import-menu'); if (m) m.style.display = 'none';
+});
+
+// ===== 初始化 =====
+renderSidebar();
+renderContent();
+updateRoleUI();
+</script>
+</body>
+</html>

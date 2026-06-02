@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>茄子代练 — 管理后台原型 v4</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#f0f2f5; }
+
+  .role-bar { background:#141414; color:#fff; padding:0 16px; height:44px; display:flex; align-items:center; justify-content:space-between; font-size:13px; position:sticky; top:0; z-index:300; }
+  .role-bar .brand { font-weight:bold; font-size:14px; display:flex; align-items:center; gap:6px; }
+  .role-bar .brand .dot { width:6px;height:6px;background:#52c41a;border-radius:50%; }
+  .role-switcher { position:relative; }
+  .role-dropdown { display:flex; align-items:center; gap:8px; padding:6px 14px; border-radius:6px; cursor:pointer; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:13px; transition:all .2s; user-select:none; }
+  .role-dropdown:hover { background:rgba(255,255,255,0.15); }
+  .role-dropdown .arrow { font-size:10px; margin-left:2px; transition:transform .2s; }
+  .role-dropdown.open .arrow { transform:rotate(180deg); }
+  .role-dropdown .rdot { width:7px;height:7px;border-radius:50%; display:inline-block; }
+  .role-dropdown .rdot.ops { background:#1890ff; }
+  .role-dropdown .rdot.cs { background:#fa8c16; }
+  .role-dropdown .rdot.booster { background:#52c41a; }
+  .role-dropdown .rdot.guild { background:#722ed1; }
+  .role-dropdown .rdot.finance { background:#eb2f96; }
+  .role-menu { position:absolute; top:100%; right:0; margin-top:6px; background:#1f1f1f; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:4px; min-width:200px; display:none; z-index:400; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+  .role-menu.show { display:block; }
+  .role-menu-item { padding:10px 14px; cursor:pointer; border-radius:6px; font-size:13px; color:rgba(255,255,255,0.7); display:flex; align-items:center; gap:10px; transition:all .15s; }
+  .role-menu-item:hover { background:rgba(255,255,255,0.08); color:#fff; }
+  .role-menu-item.active { color:#fff; }
+  .role-menu-item .check { margin-left:auto; font-size:11px; visibility:hidden; }
+  .role-menu-item.active .check { visibility:visible; }
+  .role-menu-item .rdot { width:7px;height:7px;border-radius:50%; display:inline-block; }
+  .role-menu-item .rdot.ops { background:#1890ff; }
+  .role-menu-item .rdot.cs { background:#fa8c16; }
+  .role-menu-item .rdot.booster { background:#52c41a; }
+  .role-menu-item .rdot.guild { background:#722ed1; }
+  .role-menu-item .rdot.finance { background:#eb2f96; }
+  .role-menu-divider { height:1px; background:rgba(255,255,255,0.08); margin:4px 8px; }
+
+  .layout { display:flex; min-height:calc(100vh - 44px); }
+  .sidebar { width:220px; background:#001529; color:rgba(255,255,255,0.65); display:flex; flex-direction:column; position:sticky; top:44px; height:calc(100vh - 44px); overflow-y:auto; }
+  .sidebar .logo { padding:16px; font-size:15px; font-weight:bold; color:#fff; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:8px; }
+  .sidebar .logo .dot { width:8px;height:8px;background:#52c41a;border-radius:50%; }
+  .sidebar .logo small { font-size:10px; color:rgba(255,255,255,0.35); font-weight:400; margin-left:4px; }
+  .nav-section { padding:8px 0; }
+  .nav-group-title { padding:8px 20px 4px; font-size:10px; color:rgba(255,255,255,0.25); text-transform:uppercase; letter-spacing:1.5px; display:flex; align-items:center; gap:4px; cursor:pointer; }
+  .nav-group-title:hover { color:rgba(255,255,255,0.45); }
+  .nav-link { padding:10px 20px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:13px; color:rgba(255,255,255,0.55); transition:all .15s; border-left:3px solid transparent; }
+  .nav-link:hover { color:#fff; background:rgba(255,255,255,0.04); }
+  .nav-link.active { color:#fff; background:rgba(255,255,255,0.08); border-left-color:#1890ff; }
+  .nav-link .badge { background:#f5222d; color:#fff; padding:1px 6px; border-radius:10px; font-size:10px; margin-left:auto; }
+  .nav-link .badge.warn { background:#fa8c16; }
+  .sidebar .user-info { margin-top:auto; padding:14px 16px; border-top:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.45); }
+
+  .main { flex:1; }
+  .topbar { background:#fff; padding:0 20px; height:48px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; font-size:13px; position:sticky; top:44px; z-index:50; }
+  .topbar .title { font-weight:500; }
+  .content { padding:20px; }
+
+  .stat-cards { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .stat-card { flex:1; min-width:130px; background:#fff; border-radius:8px; padding:18px; cursor:pointer; transition:all .2s; border:1px solid transparent; }
+  .stat-card:hover { border-color:#1890ff; box-shadow:0 2px 8px rgba(24,144,255,0.1); }
+  .stat-card .l { font-size:12px; color:#999; margin-bottom:8px; }
+  .stat-card .v { font-size:28px; font-weight:600; color:#262626; }
+  .stat-card .s { font-size:11px; margin-top:4px; }
+  .panel { background:#fff; border-radius:8px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+  .panel-hd { padding:14px 18px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:500; }
+  .panel-bd { padding:16px 18px; }
+  .panel-bd.nopad { padding:0; }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#fafafa; padding:9px 10px; text-align:left; font-weight:500; color:#888; border-bottom:1px solid #f0f0f0; font-size:12px; white-space:nowrap; }
+  td { padding:9px 10px; border-bottom:1px solid #f5f5f5; }
+  tr.clickable { cursor:pointer; }
+  tr.clickable:hover { background:#e6f7ff; }
+
+  .tag { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; }
+  .tag-o { background:#fff7e6; color:#fa8c16; }
+  .tag-b { background:#e6f7ff; color:#1890ff; }
+  .tag-g { background:#f6ffed; color:#52c41a; }
+  .tag-r { background:#fff1f0; color:#f5222d; }
+  .tag-p { background:#f9f0ff; color:#722ed1; }
+  .tag-pink { background:#fff0f6; color:#eb2f96; }
+  .tag-gray { background:#f5f5f5; color:#999; }
+
+  .btn { display:inline-block; padding:7px 14px; border-radius:4px; border:1px solid #d9d9d9; background:#fff; color:#333; cursor:pointer; font-size:12px; transition:all .2s; text-decoration:none; }
+  .btn:hover { border-color:#1890ff; color:#1890ff; }
+  .btn-p { background:#1890ff; color:#fff; border-color:#1890ff; }
+  .btn-p:hover { background:#40a9ff; color:#fff; }
+  .btn-s { background:#52c41a; color:#fff; border-color:#52c41a; }
+  .btn-d { color:#f5222d; border-color:#f5222d; }
+  .btn-d:hover { background:#fff1f0; }
+  .btn-w { color:#fa8c16; border-color:#fa8c16; }
+  .btn-sm { padding:4px 10px; font-size:11px; }
+  .btn-xs { padding:3px 8px; font-size:11px; }
+  .btn-group { display:flex; gap:6px; }
+
+  .form-group { margin-bottom:14px; }
+  .form-label { display:block; font-size:12px; color:#333; margin-bottom:4px; font-weight:500; }
+  .form-label .req { color:#f5222d; }
+  .form-input { width:100%; padding:7px 10px; border:1px solid #d9d9d9; border-radius:4px; font-size:13px; transition:all .2s; background:#fff; }
+  .form-input:focus { outline:none; border-color:#1890ff; box-shadow:0 0 0 2px rgba(24,144,255,0.15); }
+  select.form-input { cursor:pointer; }
+  textarea.form-input { resize:vertical; min-height:70px; font-family:inherit; }
+  .form-row { display:flex; gap:14px; }
+  .form-row > * { flex:1; }
+
+  .opt-group { display:flex; gap:6px; flex-wrap:wrap; }
+  .opt-item { padding:6px 14px; border:1px solid #d9d9d9; border-radius:4px; cursor:pointer; font-size:12px; transition:all .2s; background:#fff; }
+  .opt-item:hover { border-color:#1890ff; }
+  .opt-item.sel { background:#e6f7ff; color:#1890ff; border-color:#1890ff; }
+
+  .tabs { display:flex; gap:0; margin-bottom:14px; border-bottom:2px solid #f0f0f0; flex-wrap:wrap; }
+  .tab { padding:8px 14px; cursor:pointer; font-size:12px; color:#888; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .15s; }
+  .tab:hover { color:#1890ff; }
+  .tab.active { color:#1890ff; border-bottom-color:#1890ff; font-weight:500; }
+  .tab .cnt { font-size:11px; }
+
+  .toast { position:fixed; top:60px; right:20px; padding:10px 18px; border-radius:4px; font-size:13px; z-index:9999; display:none; animation:fadeIn .3s; color:#fff; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-8px);} to{opacity:1;transform:translateY(0);} }
+
+  .upload-zone { border:2px dashed #d9d9d9; border-radius:8px; padding:32px; text-align:center; cursor:pointer; transition:all .2s; background:#fafafa; }
+  .upload-zone:hover { border-color:#1890ff; background:#e6f7ff; }
+  .upload-zone .ic { font-size:32px; margin-bottom:6px; }
+
+  .tip { background:#fffbe6; border:1px solid #ffe58f; border-radius:8px; padding:12px 16px; font-size:12px; color:#666; margin-top:12px; }
+  .tip strong { color:#fa8c16; }
+  hr { margin:14px 0; border:none; border-top:1px solid #f0f0f0; }
+  .link { color:#1890ff; cursor:pointer; }
+  .link:hover { color:#40a9ff; text-decoration:underline; }
+
+  .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.45); z-index:500; display:none; align-items:flex-start; justify-content:center; padding-top:60px; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:#fff; border-radius:8px; width:800px; max-width:95vw; max-height:80vh; overflow-y:auto; box-shadow:0 8px 40px rgba(0,0,0,0.2); }
+  .modal.wide { width:960px; }
+  .modal-hd { padding:16px 24px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:#fff; z-index:1; border-radius:8px 8px 0 0; }
+  .modal-hd h3 { font-size:16px; }
+  .modal-hd .close { cursor:pointer; font-size:20px; color:#bbb; }
+  .modal-hd .close:hover { color:#333; }
+  .modal-bd { padding:20px 24px; }
+  .modal-ft { padding:14px 24px; border-top:1px solid #f0f0f0; display:flex; justify-content:flex-end; gap:8px; }
+
+  .mapping-row { display:flex; gap:10px; align-items:center; margin-bottom:8px; font-size:13px; }
+  .mapping-row .col-name { width:120px; color:#666; }
+  .mapping-row select { flex:1; }
+  .preview-table-wrap { max-height:200px; overflow-y:auto; border:1px solid #f0f0f0; border-radius:4px; }
+  .preview-table-wrap table { font-size:12px; }
+  .preview-table-wrap th { position:sticky; top:0; }
+
+  .guild-badge { background:#f9f0ff; color:#722ed1; padding:1px 6px; border-radius:3px; font-size:10px; margin-left:4px; }
+</style>
+</head>
+<body>
+
+<div class="role-bar">
+  <div class="brand"><span class="dot"></span>茄子代练 · 管理后台</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="role-switcher" id="role-switcher">
+      <div class="role-dropdown" id="role-dropdown">
+        <span class="rdot ops"></span> 运营：小周 <span class="arrow">▾</span>
+      </div>
+      <div class="role-menu" id="role-menu">
+        <div class="role-menu-item active" data-role="ops"><span class="rdot ops"></span>运营：小周<span class="check">✓</span></div>
+        <div class="role-menu-item" data-role="cs"><span class="rdot cs"></span>客服：小李<span class="check">✓</span></div>
+        <div class="role-menu-item" data-role="guild"><span class="rdot guild"></span>工会管理员：张会长<span class="check">✓</span></div>
+        <div class="role-menu-item" data-role="booster"><span class="rdot booster"></span>代练员：王代练<span class="check">✓</span></div>
+        <div class="role-menu-item" data-role="finance"><span class="rdot finance"></span>财务：陈财务<span class="check">✓</span></div>
+      </div>
+    </div>
+    <span style="color:rgba(255,255,255,0.4);cursor:pointer;font-size:12px;padding:4px 8px;border-radius:4px;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'" onclick="doLogout()">🚪 退出</span>
+  </div>
+</div>
+
+<div class="login-overlay" id="login-overlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#141414 0%,#1a1a2e 50%,#16213e 100%);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+  <div style="text-align:center;">
+    <div style="width:64px;height:64px;background:#52c41a;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:32px;box-shadow:0 8px 32px rgba(82,196,26,0.3);">🍆</div>
+    <div style="font-size:32px;font-weight:bold;color:#fff;margin-bottom:8px;">茄子代练</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.45);margin-bottom:48px;">游戏代练业务管理平台</div>
+    <div onclick="doLogin()" style="display:inline-block;padding:12px 64px;background:#fff;color:#141414;border-radius:8px;font-size:16px;font-weight:500;cursor:pointer;transition:all .2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">进入系统</div>
+    <div style="margin-top:16px;font-size:12px;color:rgba(255,255,255,0.25);">点击进入 · 无需输入账号密码</div>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="main">
+    <div class="topbar"><span class="title" id="page-title">📊 运营工作台</span><span style="color:#999;font-size:12px;">2026-05-20 周二 14:30</span></div>
+    <div class="content" id="content-area"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"><div id="modal-content"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var currentRole = 'ops';
+var currentPage = 'dashboard';
+var currentTab = '全部';
+
+var roleConfig = {
+  ops: {
+    name: '运营：小周', color: '#1890ff', cssClass: 'ops',
+    nav: [
+      { section:'工作台', items:[
+        {id:'dashboard', icon:'📊', label:'数据概览'},
+      ]},
+      { section:'订单管理', items:[
+        {id:'order-list', icon:'📋', label:'订单列表', badge:'36'},
+      ]},
+      { section:'运营中心', items:[
+        {id:'guild-mgmt', icon:'🏛️', label:'工会管理'},
+        {id:'booster-mgmt', icon:'👥', label:'代练员管理'},
+        {id:'booster-approval', icon:'🔍', label:'代练身份审核', badge:'3', badgeWarn:true},
+      ]},
+      { section:'系统设置', items:[
+        {id:'game-config', icon:'🎮', label:'游戏配置'},
+        {id:'role-mgmt', icon:'🔐', label:'权限管理'},
+      ]},
+    ]
+  },
+  cs: {
+    name: '客服：小李', color: '#fa8c16', cssClass: 'cs',
+    nav: [
+      { section:'工作台', items:[
+        {id:'cs-dashboard', icon:'📊', label:'工作台概览'},
+      ]},
+      { section:'订单管理', items:[
+        {id:'order-list-cs', pageOverride:'order-list', icon:'📋', label:'订单列表', badge:'36'},
+      ]},
+      { section:'系统', items:[
+        {id:'cs-logs', icon:'📝', label:'操作日志'},
+      ]},
+    ]
+  },
+  guild: {
+    name: '工会管理员：张会长', color: '#722ed1', cssClass: 'guild',
+    nav: [
+      { section:'工作台', items:[
+        {id:'guild-dashboard', icon:'📊', label:'工会工作台'},
+      ]},
+      { section:'订单管理', items:[
+        {id:'order-list-guild', pageOverride:'order-list', icon:'📋', label:'订单列表', badge:'12'},
+      ]},
+      { section:'运营中心', items:[
+        {id:'guild-boosters', icon:'👥', label:'我的代练员'},
+      ]},
+    ]
+  },
+  booster: {
+    name: '代练员：王代练', color: '#52c41a', cssClass: 'booster',
+    nav: [
+      { section:'工作台', items:[
+        {id:'booster-dashboard', icon:'📊', label:'我的工作台'},
+      ]},
+      { section:'订单中心', items:[
+        {id:'order-pool', icon:'📋', label:'接单大厅', badge:'8'},
+        {id:'my-orders', icon:'📝', label:'我的订单', badge:'3'},
+      ]},
+      { section:'财务', items:[
+        {id:'my-earnings', icon:'💰', label:'我的收益'},
+        {id:'withdraw', icon:'💳', label:'提现'},
+      ]},
+    ]
+  },
+  finance: {
+    name: '财务：陈财务', color: '#eb2f96', cssClass: 'finance',
+    nav: [
+      { section:'工作台', items:[
+        {id:'finance-dashboard', icon:'📊', label:'财务工作台'},
+      ]},
+      { section:'财务', items:[
+        {id:'withdraw-audit', icon:'💳', label:'提现审核', badge:'5', badgeWarn:true},
+        {id:'guild-settlement', icon:'🏛️', label:'工会结算', badge:'3'},
+        {id:'settlement-records', icon:'📝', label:'结算记录'},
+      ]},
+    ]
+  }
+};
+
+var currentTab = '全部';
+
+var orderDataset = [
+  {id:'#QZ20260520001',game:'三角洲',svc:'排位上分',cust:'张先生',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥298',booster:'-',guild:'-',status:'待审核',statusTag:'tag-gray',time:'05-20 10:32'},
+  {id:'#QZ20260520002',game:'三角洲',svc:'任务代打',cust:'匿名',src:'咸鱼',srcTag:'tag-b',type:'线上接单',typeTag:'tag-p',amt:'¥200',booster:'-',guild:'-',status:'待审核',statusTag:'tag-gray',time:'05-20 11:15'},
+  {id:'#QZ20260520003',game:'三角洲',svc:'账号练级',cust:'匿名',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥650',booster:'-',guild:'三角洲工会A组',status:'待审核',statusTag:'tag-gray',time:'05-20 11:50'},
+  {id:'#QZ20260519005',game:'三角洲',svc:'排位上分',cust:'周八',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥350',booster:'-',guild:'-',status:'待接单',statusTag:'tag-gray',time:'05-19 16:00'},
+  {id:'#QZ20260519008',game:'三角洲',svc:'任务代打',cust:'吴九',src:'咸鱼',srcTag:'tag-b',type:'线上接单',typeTag:'tag-p',amt:'¥180',booster:'-',guild:'-',status:'待接单',statusTag:'tag-gray',time:'05-19 17:20'},
+  {id:'#QZ20260519002',game:'三角洲',svc:'任务代打',cust:'李四',src:'咸鱼',srcTag:'tag-b',type:'派单',typeTag:'tag-p',amt:'¥150',booster:'王代练',guild:'-',status:'执行中',statusTag:'tag-b',time:'05-18 14:20'},
+  {id:'#QZ20260518012',game:'三角洲',svc:'排位上分',cust:'匿名',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥200',booster:'王代练',guild:'-',status:'执行中',statusTag:'tag-b',time:'05-18 15:00'},
+  {id:'#QZ20260517008',game:'三角洲',svc:'任务代打',cust:'李四',src:'咸鱼',srcTag:'tag-b',type:'派单',typeTag:'tag-p',amt:'¥150',booster:'刘代练',guild:'三角洲工会A组',status:'执行中',statusTag:'tag-b',time:'05-17 10:00'},
+  {id:'#QZ20260519003',game:'三角洲',svc:'装备刷取',cust:'赵六',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥520',booster:'刘代练',guild:'三角洲工会A组',status:'待验收',statusTag:'tag-o',time:'05-17 09:15'},
+  {id:'#QZ20260517005',game:'三角洲',svc:'排位上分',cust:'匿名',src:'私域',srcTag:'tag-o',type:'派单',typeTag:'tag-p',amt:'¥350',booster:'王代练',guild:'-',status:'待验收',statusTag:'tag-o',time:'05-18 20:00'},
+  {id:'#QZ20260515008',game:'三角洲',svc:'排位上分',cust:'匿名',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥450',booster:'刘代练',guild:'三角洲工会A组',status:'待结算',statusTag:'tag-r',time:'05-15 16:30'},
+  {id:'#QZ20260514006',game:'三角洲',svc:'账号练级',cust:'匿名',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥880',booster:'王代练',guild:'-',status:'待结算',statusTag:'tag-r',time:'05-14 12:00'},
+  {id:'#QZ20260519004',game:'三角洲',svc:'账号练级',cust:'王五',src:'私域',srcTag:'tag-o',type:'线上接单',typeTag:'tag-p',amt:'¥880',booster:'陈代练',guild:'-',status:'已完成',statusTag:'tag-g',time:'05-16 08:30'},
+  {id:'#QZ20260510001',game:'三角洲',svc:'排位上分',cust:'匿名',src:'三方平台',srcTag:'tag-g',type:'派单',typeTag:'tag-p',amt:'¥300',booster:'王代练',guild:'-',status:'已完成',statusTag:'tag-g',time:'05-10 14:00'},
+];
+
+function renderSidebar() {
+  var cfg = roleConfig[currentRole];
+  var html = '<div class="logo"><span class="dot"></span>茄子代练<small>·后台</small></div>';
+  cfg.nav.forEach(function(section) {
+    html += '<div class="nav-section"><div class="nav-group-title">'+section.section+'</div>';
+    section.items.forEach(function(item) {
+      var bh = '';
+      if (item.badge) { var bc = item.badgeWarn ? 'warn' : ''; bh = ' <span class="badge '+bc+'">'+item.badge+'</span>'; }
+      var isActive = currentPage === (item.pageOverride || item.id) && (!item.tab || item.tab === currentTab);
+      var tabAttr = item.tab ? ' data-tab="'+item.tab+'"' : '';
+      html += '<a class="nav-link'+(isActive?' active':'')+'" data-page="'+(item.pageOverride || item.id)+'"'+tabAttr+'>'+item.icon+' '+item.label+bh+'</a>';
+    });
+    html += '</div>';
+  });
+  html += '<div class="user-info">'+cfg.name+'</div>';
+  document.getElementById('sidebar').innerHTML = html;
+  document.querySelectorAll('.nav-link').forEach(function(lk) {
+    lk.addEventListener('click', function(e) {
+      e.preventDefault();
+      navigate(this.getAttribute('data-page'), this.getAttribute('data-tab') || '全部');
+    });
+  });
+}
+
+function navigate(page, tab) {
+  currentPage = page;
+  if (tab) currentTab = tab;
+  if (page === 'order-list-cs' || page === 'order-list-guild') currentPage = 'order-list';
+  renderSidebar();
+  renderContent();
+}
+
+function getPageTitle() {
+  if (currentPage === 'order-list') return '📋 订单列表 · ' + currentTab;
+  var all = roleConfig[currentRole].nav;
+  for (var i=0; i<all.length; i++)
+    for (var j=0; j<all[i].items.length; j++)
+      if (all[i].items[j].id === currentPage || all[i].items[j].pageOverride === currentPage)
+        return all[i].items[j].icon+' '+all[i].items[j].label;
+  return currentPage;
+}
+
+function renderContent() {
+  document.getElementById('page-title').textContent = getPageTitle();
+  var c = document.getElementById('content-area'); c.innerHTML = '';
+  var v = document.createElement('div'); v.className = 'view active';
+
+  switch(currentPage) {
+    case 'dashboard': v.innerHTML = renderOpsDashboard(); break;
+    case 'order-list': v.innerHTML = renderOrderList(currentRole, currentTab); break;
+    case 'booster-mgmt': v.innerHTML = renderBoosterMgmt(); break;
+    case 'booster-approval': v.innerHTML = renderBoosterApproval(); break;
+    case 'guild-mgmt': v.innerHTML = renderGuildMgmt(); break;
+    case 'game-config': v.innerHTML = renderGameConfig(); break;
+    case 'role-mgmt': v.innerHTML = renderRoleMgmt(); break;
+    case 'cs-dashboard': v.innerHTML = renderCSDashboard(); break;
+    case 'cs-logs': v.innerHTML = ph('📝 操作日志','全量订单操作审计日志'); break;
+    case 'guild-dashboard': v.innerHTML = renderGuildDashboard(); break;
+    case 'guild-boosters': v.innerHTML = renderGuildBoosters(); break;
+    case 'booster-dashboard': v.innerHTML = renderBoosterDashboard(); break;
+    case 'order-pool': v.innerHTML = renderOrderPool(); break;
+    case 'my-orders': v.innerHTML = renderMyOrders(); break;
+    case 'my-earnings': v.innerHTML = renderMyEarnings(); break;
+    case 'withdraw': v.innerHTML = renderWithdraw(); break;
+    case 'finance-dashboard': v.innerHTML = renderFinanceDashboard(); break;
+    case 'withdraw-audit': v.innerHTML = renderWithdrawAudit(); break;
+    case 'guild-settlement': v.innerHTML = renderGuildSettlement(); break;
+    case 'settlement-records': v.innerHTML = renderSettlementRecords(); break;
+    default: v.innerHTML = ph('建设中','功能开发中');
+  }
+  c.appendChild(v);
+  bindInteractions();
+}
+
+function ph(t,d){ return '<div class="panel"><div class="panel-bd" style="text-align:center;padding:80px 20px;color:#999;"><div style="font-size:48px;margin-bottom:16px;">🚧</div><div style="font-size:16px;margin-bottom:8px;">'+t+'</div><div>'+d+'</div></div></div>'; }
+
+// ==================== 运营仪表盘 ====================
+function renderOpsDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('order-list')"><div class="l">今日新增订单</div><div class="v">12</div><div class="s" style="color:#52c41a;">↑ 20% 较昨日</div></div>
+      <div class="stat-card"><div class="l">执行中订单</div><div class="v" style="color:#fa8c16;">28</div><div class="s">待验收 6 单</div></div>
+      <div class="stat-card"><div class="l">今日流水</div><div class="v" style="color:#52c41a;">¥8,920</div><div class="s">待结算 ¥3,200</div></div>
+      <div class="stat-card" onclick="navigate('booster-mgmt')"><div class="l">在册代练员</div><div class="v" style="color:#1890ff;">15</div><div class="s">在线 8 人 / 3 个工会</div></div>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('order-list')" style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;background:#e6f7ff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
+        <div><div style="font-size:14px;font-weight:500;">订单管理</div><div style="font-size:11px;color:#999;">查看 / 录入订单</div></div>
+      </div>
+      <div class="stat-card" style="display:flex;align-items:center;gap:12px;" onclick="switchRole('cs')">
+        <div style="width:40px;height:40px;background:#fff7e6;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔍</div>
+        <div><div style="font-size:14px;font-weight:500;">待审核 5 单</div><div style="font-size:11px;color:#999;">切换客服处理</div></div>
+      </div>
+    </div>
+    <div class="panel"><div class="panel-hd">最近订单<a class="link" onclick="navigate('order-list')">查看全部 →</a></div>
+      <div class="panel-bd nopad">
+        <table><thead><tr><th>订单号</th><th>服务</th><th>来源</th><th>客户</th><th>工会</th><th>金额</th><th>状态</th></tr></thead><tbody>
+          <tr class="clickable" onclick="navigate('order-list')"><td class="link">#QZ20260520001</td><td>排位上分</td><td><span class="tag tag-o">私域</span></td><td>张先生</td><td>-</td><td>¥298</td><td><span class="tag tag-gray">待审核</span></td></tr>
+          <tr class="clickable" onclick="navigate('order-list')"><td class="link">#QZ20260520003</td><td>账号练级</td><td><span class="tag tag-g">三方</span></td><td>匿名</td><td><span class="guild-badge">三角洲工会A组</span></td><td>¥650</td><td><span class="tag tag-gray">待审核</span></td></tr>
+          <tr class="clickable" onclick="navigate('order-list')"><td class="link">#QZ20260519003</td><td>装备刷取</td><td><span class="tag tag-g">三方</span></td><td>赵六</td><td><span class="guild-badge">三角洲工会A组</span></td><td>¥520</td><td><span class="tag tag-o">待验收</span></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  `;
+}
+
+// ==================== 订单列表 ====================
+function renderOrderList(role, activeTab) {
+  if (!activeTab) activeTab = '全部';
+  var isGuild = role === 'guild';
+  var showActions = (role === 'cs' || role === 'ops' || isGuild);
+  var isCS = role === 'cs';
+  var isOps = role === 'ops';
+  var actionHeader = showActions ? '<th>操作</th>' : '';
+  var allTabs = ['全部','待审核','待接单','执行中','待验收','待结算','已完成'];
+
+  // 统计
+  var counts = {}; allTabs.forEach(function(t){ counts[t]=0; });
+  orderDataset.forEach(function(o){ counts[o.status]++; counts['全部']++; });
+  var filtered = activeTab === '全部' ? orderDataset.slice() : orderDataset.filter(function(o){ return o.status === activeTab; });
+  // 工会管理员只看本工会订单
+  if (isGuild) filtered = filtered.filter(function(o){ return o.guild === '三角洲工会A组'; });
+
+  var tabsHtml = allTabs.map(function(t) {
+    var cls = t === activeTab ? ' class="tab active"' : ' class="tab"';
+    return '<a'+cls+' data-tab="'+t+'" onclick="navigateOrderTab(\''+t+'\')">'+t+'<span class="cnt">'+counts[t]+'</span></a>';
+  }).join('');
+
+  function actionCell(status) {
+    if (!showActions) return '';
+    // 运营和工会管理员只能查看
+    if (!isCS) return '<a class="btn btn-xs" onclick="showToast(event,\'📋 查看订单详情\',\'#1890ff\')">查看</a>';
+    // 客服根据状态显示对应操作
+    switch(status) {
+      case '待审核': return '<a class="btn btn-xs btn-p" onclick="showToast(event,\'🔍 进入审核\',\'#1890ff\')">审核</a> <a class="btn btn-xs btn-d" onclick="showToast(event,\'订单已关闭\',\'#999\')">关单</a>';
+      case '待验收': return '<a class="btn btn-xs btn-s" onclick="showToast(event,\'✓ 验收通过\',\'#52c41a\')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,\'↩ 已退回\',\'#f5222d\')">退回</a>';
+      case '待结算': return '<a class="btn btn-xs btn-s" onclick="showToast(event,\'✓ 结算完成\',\'#52c41a\')">确认结算</a>';
+      default: return '<a class="btn btn-xs" onclick="showToast(event,\'📋 查看订单详情\',\'#1890ff\')">查看</a>';
+    }
+  }
+
+  var rowsHtml = filtered.map(function(o) {
+    var guildCell = o.guild === '-' ? '-' : '<span class="guild-badge">'+o.guild+'</span>';
+    return '<tr><td class="link" onclick="showToast(event,\'📋 查看订单 '+o.id+'\',\'#1890ff\')">'+o.id+'</td><td>'+o.game+'</td><td>'+o.svc+'</td><td>'+o.cust+'</td><td><span class="tag '+o.srcTag+'">'+o.src+'</span></td><td><span class="tag '+o.typeTag+'">'+o.type+'</span></td><td>'+o.amt+'</td><td>'+o.booster+'</td>'+'<td>'+guildCell+'</td><td><span class="tag '+o.statusTag+'">'+o.status+'</span></td><td>'+o.time+'</td>'+(showActions?'<td>'+actionCell(o.status)+'</td>':'')+'</tr>';
+  }).join('');
+
+  return `
+    ${isGuild?'<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:13px;color:#666;"><span class="tag tag-p" style="font-size:13px;">🏛️ 三角洲工会A组</span> 的订单</div>':''}
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="btn-group">
+        ${isOps?'<div style="position:relative;display:inline-block;"><button class="btn btn-p" onclick="toggleImportMenu(event)" style="display:flex;align-items:center;gap:4px;">+ 录入订单 <span style="font-size:10px;">▾</span></button><div id="import-menu" style="position:absolute;top:100%;left:0;margin-top:4px;background:#fff;border:1px solid #e8e8e8;border-radius:6px;padding:4px;min-width:170px;display:none;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,0.1);"><div class="import-menu-item" onclick="openImportModal(\'manual\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;font-size:13px;">✍️ 手动录入</div><div class="import-menu-item" onclick="openImportModal(\'excel\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;font-size:13px;">📎 Excel 导入</div><div class="import-menu-item" onclick="openImportModal(\'api\')" style="padding:8px 12px;cursor:pointer;border-radius:4px;font-size:13px;">🔗 API 导入</div></div></div>':''}
+        <button class="btn">导出</button>
+      </div>
+      <div style="display:flex;gap:6px;"><input class="form-input" style="width:200px;" placeholder="搜索订单号/客户..."><button class="btn btn-p">搜索</button></div>
+    </div>
+    <div class="tabs" id="order-tabs">${tabsHtml}</div>
+    <div class="panel"><div class="panel-bd nopad">
+      <table><thead><tr><th>订单号</th><th>游戏</th><th>服务</th><th>客户</th><th>来源</th><th>类型</th><th>金额</th><th>代练员</th><th>工会</th><th>状态</th><th>时间</th>${actionHeader}</tr></thead><tbody>${rowsHtml}</tbody></table>
+    </div></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#999;padding-top:8px;"><span>共 ${filtered.length} 条</span></div>
+  `;
+}
+
+function navigateOrderTab(tab) { currentTab = tab; renderSidebar(); renderContent(); }
+
+// ==================== 订单录入 ====================
+function renderOrderEntry() {
+  return `
+    <div class="panel"><div class="panel-hd">录入新订单</div><div class="panel-bd">
+      <div class="form-group"><div class="form-label">订单来源 <span class="req">*</span></div>
+        <div class="opt-group" id="entry-source">
+          <span class="opt-item sel" data-val="私域">私域（客户预付）</span>
+          <span class="opt-item" data-val="咸鱼">咸鱼（完成后回款）</span>
+          <span class="opt-item" data-val="三方平台">三方平台（完成后回款）</span>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">游戏 <span class="req">*</span></div><select class="form-input"><option>三角洲</option></select></div>
+        <div class="form-group"><div class="form-label">服务类型 <span class="req">*</span></div><select class="form-input"><option>排位上分</option><option>任务代打</option><option>账号练级</option><option>装备刷取</option></select></div>
+        <div class="form-group"><div class="form-label">扣子类型</div><select class="form-input"><option>青铜→钻石</option><option>排位保护</option><option>段位重置后定级</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">订单类型 <span class="req">*</span></div>
+          <div class="opt-group" id="entry-type"><span class="opt-item sel" data-val="线上接单">线上接单</span><span class="opt-item" data-val="派单">派单</span></div>
+        </div>
+        <div class="form-group"><div class="form-label">归属工会</div><select class="form-input"><option value="">无（独立代练）</option><option>三角洲工会A组</option><option>三角洲工会B组</option></select></div>
+        <div class="form-group" id="entry-assign" style="display:none;"><div class="form-label">指定代练员</div><select class="form-input"><option value="">请选择...</option><option>王代练</option><option>刘代练</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">订单金额 <span class="req">*</span></div>
+          <div style="display:flex;"><span style="padding:7px 10px;background:#fafafa;border:1px solid #d9d9d9;border-right:0;border-radius:4px 0 0 4px;color:#999;">¥</span><input class="form-input" style="border-radius:0 4px 4px 0;" placeholder="金额" type="number"></div>
+        </div>
+        <div class="form-group"><div class="form-label">付款方式 <span class="req">*</span></div><select class="form-input" id="entry-pay"><option>预付（客户已付）</option><option>后付（完成后收款）</option></select></div>
+      </div>
+      <hr>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">客户姓名 <span class="req">*</span></div><input class="form-input" placeholder="客户称呼"></div>
+        <div class="form-group"><div class="form-label">联系方式</div><input class="form-input" placeholder="微信 / 手机号"></div>
+      </div>
+      <div class="form-group"><div class="form-label">需求描述</div><textarea class="form-input" placeholder="段位要求、时限、特殊说明..."></textarea></div>
+      <div class="form-group"><div class="form-label">内部备注</div><textarea class="form-input" placeholder="内部备注..."></textarea></div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;"><button class="btn">保存草稿</button><button class="btn btn-p" onclick="showToast(event,'✓ 订单已提交审核','#52c41a')">提交审核</button></div>
+    </div></div>
+    <div class="tip"><strong>💡 提示：</strong>选择工会后，该订单归属工会名下，工会管理员可查看。工会代练的结算由平台与工会统一结算，工会线下与代练结算。</div>
+  `;
+}
+
+// ==================== 代练员管理 ====================
+function renderBoosterMgmt() {
+  return `
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="btn-group"><button class="btn btn-p">+ 添加代练员</button><button class="btn">导出</button></div>
+      <div style="display:flex;gap:8px;"><select class="form-input" style="width:120px;"><option>全部工会</option><option>独立代练</option><option>三角洲工会A组</option><option>三角洲工会B组</option></select><input class="form-input" style="width:180px;" placeholder="搜索代练员..."></div>
+    </div>
+    <div class="tabs">
+      <a class="tab active">全部<span class="cnt">15</span></a>
+      <a class="tab">已审核<span class="cnt">12</span></a>
+      <a class="tab">待审核<span class="cnt">3</span></a>
+    </div>
+    <div class="panel"><div class="panel-bd nopad">
+      <table><thead><tr><th>姓名</th><th>联系方式</th><th>所属工会</th><th>游戏特长</th><th>身份状态</th><th>接单数</th><th>好评率</th><th>操作</th></tr></thead><tbody>
+        <tr><td style="font-weight:500;">王代练</td><td>wang_001</td><td>-</td><td>三角洲·排位</td><td><span class="tag tag-g">已审核</span></td><td>43</td><td>98.5%</td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+        <tr><td style="font-weight:500;">刘代练</td><td>liu_dailian</td><td><span class="guild-badge">三角洲工会A组</span></td><td>三角洲·刷取</td><td><span class="tag tag-g">已审核</span></td><td>28</td><td>96.2%</td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+        <tr><td style="font-weight:500;">新代练A</td><td>new_a_001</td><td><span class="guild-badge">三角洲工会A组</span></td><td>三角洲·排位</td><td><span class="tag tag-o">待审核</span></td><td>-</td><td>-</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 审核通过','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回','#f5222d')">驳回</a></td></tr>
+        <tr><td style="font-weight:500;">新代练B</td><td>new_b_002</td><td>-</td><td>三角洲·综合</td><td><span class="tag tag-o">待审核</span></td><td>-</td><td>-</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 审核通过','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回','#f5222d')">驳回</a></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="tip"><strong>💡 说明：</strong>工会管理员添加的代练需运营审核通过后方可登录系统接单。独立代练由运营直接添加，无需审核。</div>
+  `;
+}
+
+// ==================== 代练身份审核（运营） ====================
+function renderBoosterApproval() {
+  return `
+    <div class="panel"><div class="panel-hd">🔍 待审核代练身份</div><div class="panel-bd nopad">
+      <table><thead><tr><th>姓名</th><th>联系方式</th><th>申请工会</th><th>添加人</th><th>游戏特长</th><th>申请时间</th><th>操作</th></tr></thead><tbody>
+        <tr><td style="font-weight:500;">新代练A</td><td>new_a_001</td><td><span class="guild-badge">三角洲工会A组</span></td><td>张会长</td><td>三角洲·排位</td><td>05-20 09:00</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 审核通过，代练可登录系统','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回，需通知工会管理员','#f5222d')">驳回</a></td></tr>
+        <tr><td style="font-weight:500;">新代练B</td><td>new_b_002</td><td>-（独立）</td><td>运营小周</td><td>三角洲·综合</td><td>05-20 10:30</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 审核通过','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回','#f5222d')">驳回</a></td></tr>
+        <tr><td style="font-weight:500;">新代练C</td><td>new_c_003</td><td><span class="guild-badge">三角洲工会B组</span></td><td>李会长</td><td>三角洲·任务</td><td>05-20 11:00</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 审核通过','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回','#f5222d')">驳回</a></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="tip"><strong>💡 审核流程：</strong>工会管理员添加代练 → 运营审核身份 → 通过后代练可登录接单。驳回需填写原因通知工会管理员。</div>
+  `;
+}
+
+// ==================== 工会管理 ====================
+function renderGuildMgmt() {
+  return `
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <div class="btn-group"><button class="btn btn-p">+ 新建工会</button></div>
+      <input class="form-input" style="width:200px;" placeholder="搜索工会...">
+    </div>
+    <div class="panel"><div class="panel-bd nopad">
+      <table><thead><tr><th>工会名称</th><th>管理员</th><th>代练人数</th><th>本月订单</th><th>本月流水</th><th>待结算金额</th><th>状态</th><th>操作</th></tr></thead><tbody>
+        <tr><td style="font-weight:500;">三角洲工会A组</td><td>张会长</td><td>8</td><td>45</td><td>¥18,500</td><td>¥4,200</td><td><span class="tag tag-g">正常</span></td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+        <tr><td style="font-weight:500;">三角洲工会B组</td><td>李会长</td><td>5</td><td>28</td><td>¥9,800</td><td>¥2,100</td><td><span class="tag tag-g">正常</span></td><td><a class="btn btn-xs">查看</a> <a class="btn btn-xs">编辑</a></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+// ==================== 游戏配置 ====================
+function renderGameConfig() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" style="flex:2;"><div class="l">当前游戏</div><div class="v">三角洲</div><div class="s">Delta Force · 已启用</div></div>
+      <div class="stat-card"><div class="l">服务类型</div><div class="v">4</div></div>
+      <div class="stat-card"><div class="l">扣子类型</div><div class="v">12</div></div>
+    </div>
+
+    <h3 style="margin-bottom:12px;">🎮 三角洲 — 服务类型配置</h3>
+    <div class="panel"><div class="panel-bd nopad">
+      <table><thead><tr><th>服务类型</th><th>扣子数量</th><th>结算规则</th><th>默认金额</th><th>状态</th><th>操作</th></tr></thead><tbody>
+        <tr><td style="font-weight:500;">排位上分</td><td>4</td><td>按金额分成 70%</td><td>¥200</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs">配置扣子</a></td></tr>
+        <tr><td style="font-weight:500;">任务代打</td><td>3</td><td>固定单价</td><td>¥120</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs">配置扣子</a></td></tr>
+        <tr><td style="font-weight:500;">账号练级</td><td>3</td><td>按时计费</td><td>¥650</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs">配置扣子</a></td></tr>
+        <tr><td style="font-weight:500;">装备刷取</td><td>2</td><td>按金额分成 60%</td><td>¥380</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs">配置扣子</a></td></tr>
+      </tbody></table>
+    </div></div>
+
+    <h3 style="margin:20px 0 12px;">🔧 排位上分 — 扣子类型配置</h3>
+    <div class="panel"><div class="panel-bd nopad">
+      <table><thead><tr><th>扣子名称</th><th>起始段位</th><th>目标段位</th><th>预估时长</th><th>默认金额</th><th>状态</th><th>操作</th></tr></thead><tbody>
+        <tr><td>青铜→钻石</td><td>青铜3</td><td>钻石1</td><td>7天</td><td>¥298</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs btn-d">停用</a></td></tr>
+        <tr><td>黄金→铂金</td><td>黄金3</td><td>铂金1</td><td>3天</td><td>¥200</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs btn-d">停用</a></td></tr>
+        <tr><td>铂金→钻石</td><td>铂金5</td><td>钻石1</td><td>5天</td><td>¥350</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs btn-d">停用</a></td></tr>
+        <tr><td>排位保护</td><td>-</td><td>-</td><td>-</td><td>¥100</td><td><span class="tag tag-g">启用</span></td><td><a class="btn btn-xs">编辑</a> <a class="btn btn-xs btn-d">停用</a></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="tip"><strong>💡 多游戏扩展：</strong>架构支持添加新游戏（通过 games 表），每款游戏独立配置服务类型和扣子类型。当前仅配置三角洲，后续新增游戏时在此页面进行。</div>
+  `;
+}
+
+// ==================== 权限管理 ====================
+function renderRoleMgmt() {
+  return `
+    <div class="panel"><div class="panel-hd">角色权限配置</div><div class="panel-bd nopad">
+      <table><thead><tr><th>角色</th><th>订单查看</th><th>订单录入</th><th>审核验收</th><th>结算操作</th><th>代练管理</th><th>工会管理</th><th>提现审核</th><th>系统配置</th></tr></thead><tbody>
+        <tr><td style="font-weight:500;">运营</td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-g">✓</span></td></tr>
+        <tr><td style="font-weight:500;">客服</td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td></tr>
+        <tr><td style="font-weight:500;">工会管理员</td><td><span class="tag tag-g">✓</span>(本工会)</td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-g">✓</span>(本工会)</td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td></tr>
+        <tr><td style="font-weight:500;">代练员</td><td><span class="tag tag-g">✓</span>(已接)</td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td></tr>
+        <tr><td style="font-weight:500;">财务</td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-r">✗</span></td><td><span class="tag tag-g">✓</span></td><td><span class="tag tag-r">✗</span></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="tip"><strong>💡 说明：</strong>工会代练员的结算流程：平台与工会统一结算 → 工会线下与代练员结算。财务直接打款给工会，不打款给工会名下代练员。独立代练员直接由平台结算。</div>
+  `;
+}
+
+// ==================== 客服仪表盘 ====================
+function renderCSDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('order-list','待审核')"><div class="l">待审核</div><div class="v" style="color:#f5222d;">5</div></div>
+      <div class="stat-card" onclick="navigate('order-list','待验收')"><div class="l">待验收</div><div class="v" style="color:#fa8c16;">6</div></div>
+      <div class="stat-card" onclick="navigate('order-list','待结算')"><div class="l">待结算</div><div class="v" style="color:#1890ff;">3</div><div class="s">¥3,200</div></div>
+      <div class="stat-card"><div class="l">今日审核通过</div><div class="v" style="color:#52c41a;">18</div></div>
+    </div>
+  `;
+}
+
+// ==================== 工会管理员 ====================
+function renderGuildDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card"><div class="l">本工会今日订单</div><div class="v">8</div><div class="s">执行中 5 单</div></div>
+      <div class="stat-card"><div class="l">本月流水</div><div class="v" style="color:#52c41a;">¥18,500</div><div class="s">45 单已完成</div></div>
+      <div class="stat-card"><div class="l">在册代练员</div><div class="v" style="color:#722ed1;">8</div><div class="s">在线 6 人</div></div>
+      <div class="stat-card"><div class="l">待结算金额</div><div class="v" style="color:#fa8c16;">¥4,200</div><div class="s">平台结算后线下分发</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">本工会订单<a class="link" onclick="navigate('guild-orders')">查看全部 →</a></div>
+      <div class="panel-bd nopad">
+        <table><thead><tr><th>订单号</th><th>服务</th><th>代练员</th><th>金额</th><th>状态</th></tr></thead><tbody>
+          <tr><td>#QZ20260520003</td><td>账号练级</td><td>-</td><td>¥650</td><td><span class="tag tag-gray">待审核</span></td></tr>
+          <tr><td>#QZ20260517008</td><td>任务代打</td><td>刘代练</td><td>¥150</td><td><span class="tag tag-b">执行中</span></td></tr>
+          <tr><td>#QZ20260519003</td><td>装备刷取</td><td>刘代练</td><td>¥520</td><td><span class="tag tag-o">待验收</span></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  `;
+}
+
+function renderGuildOrders() {
+  var guildOrders = orderDataset.filter(function(o){ return o.guild === '三角洲工会A组'; });
+  return `
+    <div class="panel"><div class="panel-hd">三角洲工会A组 · 全部订单</div><div class="panel-bd nopad">
+      <table><thead><tr><th>订单号</th><th>服务</th><th>代练员</th><th>客户</th><th>金额</th><th>状态</th><th>时间</th></tr></thead><tbody>
+        ${guildOrders.map(function(o){ return '<tr><td class="link">'+o.id+'</td><td>'+o.svc+'</td><td>'+o.booster+'</td><td>'+o.cust+'</td><td>'+o.amt+'</td><td><span class="tag '+o.statusTag+'">'+o.status+'</span></td><td>'+o.time+'</td></tr>'; }).join('')}
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderGuildBoosters() {
+  return `
+    <div style="display:flex;justify-content:space-between;margin-bottom:14px;">
+      <button class="btn btn-p" onclick="showToast(event,'✓ 已提交，等待运营审核通过后即可登录','#1890ff')">+ 添加代练员</button>
+      <input class="form-input" style="width:200px;" placeholder="搜索代练员...">
+    </div>
+    <div class="panel"><div class="panel-hd">三角洲工会A组 · 代练员</div><div class="panel-bd nopad">
+      <table><thead><tr><th>姓名</th><th>联系方式</th><th>游戏特长</th><th>身份状态</th><th>本月接单</th><th>好评率</th><th>在线</th></tr></thead><tbody>
+        <tr><td style="font-weight:500;">刘代练</td><td>liu_dailian</td><td>三角洲·刷取</td><td><span class="tag tag-g">已审核</span></td><td>28</td><td>96.2%</td><td><span class="tag tag-g">在线</span></td></tr>
+        <tr><td style="font-weight:500;">赵代练</td><td>zhao_dl</td><td>三角洲·排位</td><td><span class="tag tag-g">已审核</span></td><td>22</td><td>97.3%</td><td><span class="tag tag-g">在线</span></td></tr>
+        <tr><td style="font-weight:500;">新代练A</td><td>new_a_001</td><td>三角洲·排位</td><td><span class="tag tag-o">待审核</span></td><td>-</td><td>-</td><td><span class="tag tag-gray">未激活</span></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="tip"><strong>💡 说明：</strong>添加的代练员需平台运营审核通过后方可登录系统接单。审核中显示为「待审核」状态。</div>
+  `;
+}
+
+// ==================== 代练员 ====================
+function renderBoosterDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('my-orders')"><div class="l">执行中订单</div><div class="v" style="color:#1890ff;">3</div><div class="s">共完成 127 单</div></div>
+      <div class="stat-card"><div class="l">今日收益</div><div class="v" style="color:#52c41a;">¥520</div><div class="s" style="color:#52c41a;">↑ 15%</div></div>
+      <div class="stat-card" onclick="navigate('withdraw')"><div class="l">账户余额</div><div class="v">¥2,350</div><div class="s" style="color:#1890ff;">可提现 →</div></div>
+      <div class="stat-card"><div class="l">好评率</div><div class="v" style="color:#fa8c16;">98.5%</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">进行中的订单<a class="link" onclick="navigate('my-orders')">查看全部 →</a></div>
+      <div class="panel-bd nopad">
+        <table><thead><tr><th>订单号</th><th>服务</th><th>客户</th><th>金额</th><th>进度</th><th>操作</th></tr></thead><tbody>
+          <tr><td class="link">#QZ20260518012</td><td>排位上分</td><td>匿名</td><td>¥200</td><td>黄金3→铂金1 · 60%</td><td><a class="btn btn-xs">进度</a></td></tr>
+          <tr><td class="link">#QZ20260515003</td><td>账号练级</td><td>王五</td><td>¥880</td><td>Lv.35/40 · 88%</td><td><a class="btn btn-xs btn-w">交付</a></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  `;
+}
+
+function renderOrderPool() {
+  return `
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <select class="form-input" style="width:auto;"><option>全部游戏</option><option>三角洲</option></select>
+      <select class="form-input" style="width:auto;"><option>全部类型</option><option>排位上分</option><option>任务代打</option><option>账号练级</option><option>装备刷取</option></select>
+    </div>
+    <div class="panel"><div class="panel-hd">接单大厅（8单）</div><div class="panel-bd nopad">
+      <table><thead><tr><th>订单号</th><th>服务</th><th>扣子</th><th>金额</th><th>来源</th><th>时限</th><th>操作</th></tr></thead><tbody>
+        <tr><td>#QZ20260520005</td><td>排位上分</td><td>铂金→钻石</td><td>¥350</td><td><span class="tag tag-o">私域</span></td><td>3天</td><td><a class="btn btn-xs btn-p" onclick="showToast(event,'✓ 已接单','#52c41a')">接单</a></td></tr>
+        <tr><td>#QZ20260520006</td><td>装备刷取</td><td>指定装备x3</td><td>¥520</td><td><span class="tag tag-g">三方</span></td><td>7天</td><td><a class="btn btn-xs btn-p" onclick="showToast(event,'✓ 已接单','#52c41a')">接单</a></td></tr>
+        <tr><td>#QZ20260520007</td><td>排位上分</td><td>黄金→铂金</td><td>¥200</td><td><span class="tag tag-o">私域</span></td><td>5天</td><td><a class="btn btn-xs btn-p" onclick="showToast(event,'✓ 已接单','#52c41a')">接单</a></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderMyOrders() {
+  return `
+    <div class="panel"><div class="panel-hd">我的订单</div><div class="panel-bd nopad">
+      <table><thead><tr><th>订单号</th><th>服务</th><th>来源</th><th>金额</th><th>我的收益</th><th>状态</th><th>操作</th></tr></thead><tbody>
+        <tr><td>#QZ20260518012</td><td>排位上分</td><td><span class="tag tag-o">私域</span></td><td>¥200</td><td>¥140</td><td><span class="tag tag-b">执行中</span></td><td><a class="btn btn-xs">进度</a> <a class="btn btn-xs btn-w">交付</a></td></tr>
+        <tr><td>#QZ20260515003</td><td>账号练级</td><td><span class="tag tag-o">私域</span></td><td>¥880</td><td>¥616</td><td><span class="tag tag-o">待验收</span></td><td><span style="font-size:11px;color:#999;">等待客服验收</span></td></tr>
+        <tr><td>#QZ20260510001</td><td>排位上分</td><td><span class="tag tag-g">三方</span></td><td>¥300</td><td>¥210</td><td><span class="tag tag-g">已完成</span></td><td><span style="font-size:11px;color:#52c41a;">已结算 ✓</span></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderMyEarnings() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('withdraw')"><div class="l">账户余额</div><div class="v">¥2,350</div><div class="s" style="color:#1890ff;">可提现 →</div></div>
+      <div class="stat-card"><div class="l">本月收益</div><div class="v" style="color:#52c41a;">¥8,450</div><div class="s">22 单</div></div>
+      <div class="stat-card"><div class="l">待结算</div><div class="v" style="color:#fa8c16;">¥756</div><div class="s">3 单</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">结算记录</div><div class="panel-bd nopad">
+      <table><thead><tr><th>时间</th><th>订单号</th><th>订单金额</th><th>分成</th><th>结算金额</th></tr></thead><tbody>
+        <tr><td>05-14</td><td>#QZ20260510001</td><td>¥300</td><td>70%</td><td style="color:#52c41a;">¥210</td></tr>
+        <tr><td>05-12</td><td>#QZ2026050805</td><td>¥450</td><td>70%</td><td style="color:#52c41a;">¥315</td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderWithdraw() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card"><div class="l">可提现余额</div><div class="v" style="color:#52c41a;">¥2,350</div></div>
+      <div class="stat-card"><div class="l">待结算</div><div class="v" style="color:#fa8c16;">¥756</div><div class="s">暂不可提</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">发起提现</div><div class="panel-bd">
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">收款方式</div>
+          <div class="opt-group" id="withdraw-method">
+            <span class="opt-item sel" data-val="wechat">微信</span>
+            <span class="opt-item" data-val="alipay">支付宝</span>
+            <span class="opt-item" data-val="bank">银行卡</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">提现金额 <span class="req">*</span></div>
+          <div style="display:flex;"><span style="padding:7px 10px;background:#fafafa;border:1px solid #d9d9d9;border-right:0;border-radius:4px 0 0 4px;color:#999;">¥</span><input class="form-input" style="border-radius:0 4px 4px 0;" placeholder="可提 ¥2,350" type="number"></div>
+        </div>
+        <div class="form-group"><div class="form-label">&nbsp;</div>
+          <div style="display:flex;gap:6px;padding-top:4px;">
+            <span class="btn btn-xs" onclick="this.parentElement.parentElement.previousElementSibling.querySelector('input').value='500'">¥500</span>
+            <span class="btn btn-xs" onclick="this.parentElement.parentElement.previousElementSibling.querySelector('input').value='1000'">¥1,000</span>
+            <span class="btn btn-xs" onclick="this.parentElement.parentElement.previousElementSibling.querySelector('input').value='2350'">全部</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:8px;">
+        <button class="btn btn-p" onclick="showToast(event,'✓ 提现申请已提交，等待财务审核','#52c41a')">确认提现</button>
+      </div>
+    </div></div>
+    <div class="tip"><strong>💡 提示：</strong>独立代练员提现需经财务审核，1-2个工作日到账。工会代练员的结算由工会线下处理。</div>
+  `;
+}
+
+// ==================== 财务 ====================
+function renderFinanceDashboard() {
+  return `
+    <div class="stat-cards">
+      <div class="stat-card" onclick="navigate('withdraw-audit')"><div class="l">待审核提现</div><div class="v" style="color:#f5222d;">5</div><div class="s">¥8,500</div></div>
+      <div class="stat-card" onclick="navigate('guild-settlement')"><div class="l">待工会结算</div><div class="v" style="color:#fa8c16;">3</div><div class="s">¥6,300</div></div>
+      <div class="stat-card"><div class="l">本月支出</div><div class="v" style="color:#eb2f96;">¥32,800</div><div class="s">含提现 + 工会打款</div></div>
+      <div class="stat-card"><div class="l">本月平台收入</div><div class="v" style="color:#52c41a;">¥52,000</div></div>
+    </div>
+    <div class="panel"><div class="panel-hd">待处理事项</div><div class="panel-bd nopad">
+      <table><thead><tr><th>类型</th><th>对象</th><th>金额</th><th>申请时间</th><th>操作</th></tr></thead><tbody>
+        <tr><td><span class="tag tag-pink">提现</span></td><td>王代练</td><td>¥1,500</td><td>05-20 10:00</td><td><a class="btn btn-xs btn-p" onclick="navigate('withdraw-audit')">审核</a></td></tr>
+        <tr><td><span class="tag tag-p">工会结算</span></td><td>三角洲工会A组</td><td>¥4,200</td><td>05-19</td><td><a class="btn btn-xs btn-p" onclick="navigate('guild-settlement')">结算</a></td></tr>
+        <tr><td><span class="tag tag-pink">提现</span></td><td>刘代练</td><td>¥2,000</td><td>05-19 16:00</td><td><a class="btn btn-xs btn-p" onclick="navigate('withdraw-audit')">审核</a></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function renderWithdrawAudit() {
+  return `
+    <div class="panel"><div class="panel-hd">提现审核</div><div class="panel-bd nopad">
+      <table><thead><tr><th>申请人</th><th>类型</th><th>金额</th><th>收款方式</th><th>收款账号</th><th>申请时间</th><th>操作</th></tr></thead><tbody>
+        <tr><td>王代练</td><td><span class="tag tag-g">独立代练</span></td><td>¥1,500</td><td>微信</td><td>wang***</td><td>05-20 10:00</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 已打款','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回','#f5222d')">驳回</a></td></tr>
+        <tr><td>刘代练</td><td><span class="tag tag-g">独立代练</span></td><td>¥2,000</td><td>支付宝</td><td>liu***</td><td>05-19 16:00</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 已打款','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回','#f5222d')">驳回</a></td></tr>
+        <tr><td>陈代练</td><td><span class="tag tag-g">独立代练</span></td><td>¥3,000</td><td>银行卡</td><td>chen***</td><td>05-18 14:00</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 已打款','#52c41a')">通过</a> <a class="btn btn-xs btn-d" onclick="showToast(event,'↩ 已驳回','#f5222d')">驳回</a></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="tip"><strong>💡 说明：</strong>仅审核独立代练员的提现。工会代练员的结算由平台统一打款给工会（见工会结算），工会线下与代练员结算。</div>
+  `;
+}
+
+function renderGuildSettlement() {
+  return `
+    <div class="panel"><div class="panel-hd">工会结算</div><div class="panel-bd nopad">
+      <table><thead><tr><th>工会</th><th>已完成订单数</th><th>订单总金额</th><th>结算规则</th><th>结算金额</th><th>收款账户</th><th>操作</th></tr></thead><tbody>
+        <tr><td>三角洲工会A组</td><td>12</td><td>¥6,000</td><td>工会分成 70%</td><td style="font-weight:500;">¥4,200</td><td>张会长 6222****1234</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 已向三角洲工会A组打款 ¥4,200','#52c41a')">确认打款</a></td></tr>
+        <tr><td>三角洲工会B组</td><td>6</td><td>¥3,000</td><td>工会分成 70%</td><td style="font-weight:500;">¥2,100</td><td>李会长 6222****5678</td><td><a class="btn btn-xs btn-s" onclick="showToast(event,'✓ 已向三角洲工会B组打款 ¥2,100','#52c41a')">确认打款</a></td></tr>
+      </tbody></table>
+    </div></div>
+    <div class="tip"><strong>💡 工会结算流程：</strong>平台与工会按周期统一结算 → 财务向工会打款 → 工会线下向名下代练员分发。平台不直接向工会代练员打款。</div>
+  `;
+}
+
+function renderSettlementRecords() {
+  return `
+    <div class="panel"><div class="panel-hd">结算记录</div><div class="panel-bd nopad">
+      <table><thead><tr><th>时间</th><th>类型</th><th>对象</th><th>金额</th><th>状态</th></tr></thead><tbody>
+        <tr><td>05-19 14:00</td><td><span class="tag tag-pink">提现</span></td><td>陈代练</td><td>¥3,000</td><td><span class="tag tag-g">已到账</span></td></tr>
+        <tr><td>05-18 10:00</td><td><span class="tag tag-p">工会结算</span></td><td>三角洲工会A组</td><td>¥4,200</td><td><span class="tag tag-g">已打款</span></td></tr>
+        <tr><td>05-15 16:00</td><td><span class="tag tag-pink">提现</span></td><td>王代练</td><td>¥1,500</td><td><span class="tag tag-g">已到账</span></td></tr>
+      </tbody></table>
+    </div></div>
+  `;
+}
+
+function showToast(e, msg, color) {
+  if (e) e.stopPropagation();
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = color || '#52c41a'; t.style.display = 'block';
+  setTimeout(function() { t.style.display = 'none'; }, 2000);
+}
+
+function bindInteractions() {
+  document.querySelectorAll('.opt-group').forEach(function(g) {
+    g.querySelectorAll('.opt-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        g.querySelectorAll('.opt-item').forEach(function(i) { i.classList.remove('sel'); });
+        this.classList.add('sel');
+        var v = this.getAttribute('data-val');
+        if (g.id === 'entry-type') { var a = document.getElementById('entry-assign'); if (a) a.style.display = v==='派单' ? '' : 'none'; }
+        if (g.id === 'entry-source') { var p = document.getElementById('entry-pay'); if (p) p.value = v==='私域' ? '预付（客户已付）' : '后付（完成后收款）'; }
+        if (g.id === 'withdraw-method') { ['wechat','alipay','bank'].forEach(function(k) { var e = document.getElementById('wd-'+k); if (e) e.style.display = 'none'; }); var t = document.getElementById('wd-'+v); if (t) t.style.display = ''; }
+      });
+    });
+  });
+}
+
+function switchRole(role) {
+  currentRole = role; currentTab = '全部';
+  updateRoleUI();
+  currentPage = role==='ops'?'dashboard':role==='cs'?'cs-dashboard':role==='guild'?'guild-dashboard':role==='booster'?'booster-dashboard':'finance-dashboard';
+  renderSidebar(); renderContent();
+}
+
+function updateRoleUI() {
+  var cfg = roleConfig[currentRole];
+  var dd = document.getElementById('role-dropdown');
+  dd.innerHTML = '<span class="rdot '+cfg.cssClass+'"></span> '+cfg.name+' <span class="arrow">▾</span>';
+  document.querySelectorAll('.role-menu-item').forEach(function(item) {
+    item.classList.remove('active');
+    if (item.getAttribute('data-role') === currentRole) item.classList.add('active');
+  });
+  document.getElementById('role-menu').classList.remove('show');
+}
+
+document.getElementById('role-dropdown').addEventListener('click', function(e) {
+  e.stopPropagation();
+  document.getElementById('role-menu').classList.toggle('show');
+});
+document.querySelectorAll('.role-menu-item').forEach(function(item) {
+  item.addEventListener('click', function(e) { e.stopPropagation(); switchRole(this.getAttribute('data-role')); });
+});
+document.addEventListener('click', function() {
+  document.getElementById('role-menu').classList.remove('show');
+});
+
+function doLogin() {
+  document.getElementById('login-overlay').style.display = 'none';
+}
+function doLogout() {
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+renderSidebar();
+renderContent();
+updateRoleUI();
+</script>
+</body>
+</html>

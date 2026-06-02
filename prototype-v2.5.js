@@ -21,14 +21,14 @@ function roleVisible(pageId){
   if(pageId==='my-assets') return r==='guild_admin'||r==='guild_operator'||r==='booster';
   // 订单录入：客服、财务、代练不可见（admin/operator/guild_admin/guild_operator）
   if(pageId==='order-entry') return r==='admin'||r==='operator'||r==='guild_admin'||r==='guild_operator';
-  // 订单管理：代练不可见
-  if(pageId==='order-mgmt') return r!=='booster';
+  // 订单管理：所有角色可见（代练仅看自己的数据）
+  if(pageId==='order-mgmt') return true;
   // 订单池：客服和财务不可见
   if(pageId==='order-pool') return r!=='cs'&&r!=='finance';
   // 财务管理-机构结算：仅财务
   if(pageId==='guild-settlement') return r==='finance';
-  // 财务管理-代练结算/客服结算/提现审核：管理员和财务
-  if(pageId==='booster-settlement'||pageId==='cs-settlement'||pageId==='withdraw-audit') return r==='admin'||r==='finance';
+  // 财务管理-客服结算/提现审核：管理员和财务
+  if(pageId==='cs-settlement'||pageId==='withdraw-audit') return r==='admin'||r==='finance';
   // 机构管理：仅管理员
   if(pageId==='org-mgmt') return r==='admin';
   // 岗位管理、用户管理、代练审核、下家绑定：管理员和运营
@@ -40,12 +40,20 @@ function roleVisible(pageId){
   return true;
 }
 
+// 一期范围判断
+function isPhase1(pageId){
+  return['home','platform-assets','my-assets','order-entry','order-mgmt','order-pool','guild-settlement','org-mgmt','position-mgmt','user-mgmt','game-config','service-type-mgmt','permission-mgmt'].indexOf(pageId)!==-1;
+}
+
 // 订单操作权限判断（按文档4.1角色×操作矩阵）
 function canReview(){ return currentRole==='admin'||currentRole==='cs'; }
 function canManage(){ return currentRole==='admin'||currentRole==='operator'||currentRole==='guild_admin'; }
 function canOperate(){ return currentRole==='admin'||currentRole==='operator'||currentRole==='guild_admin'||currentRole==='guild_operator'; }
 function canVerify(){ return currentRole==='admin'||currentRole==='operator'||currentRole==='cs'; }
 function canSettle(){ return currentRole==='admin'||currentRole==='operator'||currentRole==='guild_admin'||currentRole==='guild_operator'; }
+
+function currentUserGuild(){if(currentRole==='guild_admin'||currentRole==='guild_operator')return'三角洲机构A组';return'';}
+function currentBoosterName(){if(currentRole==='booster')return'王代练';return'';}
 
 function roleHasGroup(groupKey){
   var items=menuTree.find(function(g){return g.key===groupKey;});
@@ -69,7 +77,6 @@ var menuTree=[
   ]},
   {key:'finance',icon:'💰',label:'财务管理',badge:'6',children:[
     {id:'guild-settlement',label:'机构结算',icon:'🏛️'},
-    {id:'booster-settlement',label:'代练结算',icon:'💵'},
     {id:'cs-settlement',label:'客服结算',icon:'💳'},
     {id:'withdraw-audit',label:'提现审核',icon:'🔐',badge:'3'}
   ]},
@@ -91,14 +98,14 @@ var pageTitles={
   home:'工作台 > 首页','platform-assets':'工作台 > 平台资产','my-assets':'工作台 > 我的资产',
   'order-entry':'订单管理 > 订单录入','order-mgmt':'订单管理 > 订单管理','order-pool':'订单管理 > 订单池',
   'data-overview':'数据报表 > 数据概览','order-report':'数据报表 > 订单报表',
-  'guild-settlement':'财务管理 > 机构结算','booster-settlement':'财务管理 > 代练结算','cs-settlement':'财务管理 > 客服结算','withdraw-audit':'财务管理 > 提现审核',
+  'guild-settlement':'财务管理 > 机构结算','cs-settlement':'财务管理 > 客服结算','withdraw-audit':'财务管理 > 提现审核',
   'org-mgmt':'人员管理 > 机构管理','position-mgmt':'人员管理 > 岗位管理','user-mgmt':'人员管理 > 用户管理','booster-review':'人员管理 > 代练审核','bind-set':'人员管理 > 下家绑定',
   'game-config':'系统管理 > 游戏设置','service-type-mgmt':'系统管理 > 服务类型','permission-mgmt':'系统管理 > 权限管理'
 };
 
 var pageIcons={
   home:'📊','platform-assets':'🏦','my-assets':'💎','order-entry':'➕','order-mgmt':'📋','order-pool':'📦',
-  'data-overview':'📊','order-report':'📑','guild-settlement':'🏛️','booster-settlement':'💵','cs-settlement':'💳','withdraw-audit':'🔐',
+  'data-overview':'📊','order-report':'📑','guild-settlement':'🏛️','cs-settlement':'💳','withdraw-audit':'🔐',
   'org-mgmt':'🏢','position-mgmt':'📝','user-mgmt':'👤','booster-review':'✅','bind-set':'🔗','game-config':'🎮','service-type-mgmt':'🛠','permission-mgmt':'🔐'
 };
 
@@ -115,7 +122,11 @@ function renderTree(){
     h+='<span class="arr">▶</span></div>';
     h+='<div class="tree-children'+(open?' open':'')+'">';
     visChildren.forEach(function(c){
-      h+='<div class="tree-item'+(curPage===c.id?' active':'')+'" data-page="'+c.id+'"><span class="dot"></span>'+c.label;
+      var dis=!isPhase1(c.id);
+      var disCls=dis?' disabled':'';
+      var disAttr=dis?' onclick="event.stopPropagation();return false;"':'';
+      h+='<div class="tree-item'+(curPage===c.id?' active':'')+disCls+'" data-page="'+c.id+'"'+disAttr+'><span class="dot"></span>'+c.label;
+      if(dis) h+=' <span style="font-size:10px;color:var(--sider-text);opacity:.4;">(二期)</span>';
       if(c.badge) h+=' <span style="background:var(--danger);color:#fff;padding:0 5px;border-radius:8px;font-size:10px;margin-left:4px;">'+c.badge+'</span>';
       h+='</div>';
     });
@@ -134,6 +145,7 @@ function renderTree(){
   document.querySelectorAll('.tree-item').forEach(function(el){
     el.addEventListener('click',function(e){
       e.stopPropagation();
+      if(this.classList.contains('disabled')) return;
       var p=this.getAttribute('data-page');
       if(p===curPage) return;
       curPage=p;
@@ -234,6 +246,7 @@ function toast(msg,red){
 }
 
 function renderContent(){
+  if(!isPhase1(curPage)){curPage='home';openGroup='workspace';renderTree();}
   var title=pageTitles[curPage]||curPage;
   setBreadcrumb(title);
   var c=document.getElementById('content-area');
@@ -271,11 +284,11 @@ function rHome(){
   var r=currentRole;
   // ── 平台管理员：全量待处理汇总，点击卡片跳转对应页面集中处理 ──
   if(r==='admin'){
-    return '<div class="stat-row"><div class="stat-item" onclick="curPage=\'order-mgmt\';curTab=\'待审核\';openGroup=\'order\';renderTree();renderContent()"><div class="label">待审核订单</div><div class="value" style="color:var(--danger);">5</div><div class="sub">客服待处理 →</div></div><div class="stat-item" onclick="curPage=\'order-mgmt\';openGroup=\'order\';renderTree();renderContent()"><div class="label">待验收订单</div><div class="value" style="color:var(--warning);">12</div><div class="sub">客服待处理 →</div></div><div class="stat-item" onclick="curPage=\'booster-review\';openGroup=\'personnel\';renderTree();renderContent()"><div class="label">待审核代练</div><div class="value" style="color:var(--danger);">2</div><div class="sub">运营待处理 →</div></div><div class="stat-item" onclick="curPage=\'withdraw-audit\';openGroup=\'finance\';renderTree();renderContent()"><div class="label">待审核提现</div><div class="value" style="color:var(--warning);">3</div><div class="sub">¥8,500 财务待处理 →</div></div></div><div class="stat-row"><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()"><div class="label">机构结算申请</div><div class="value" style="color:var(--warning);">2</div><div class="sub">¥13,510 财务待处理 →</div></div><div class="stat-item"><div class="label">今日新增订单</div><div class="value">28</div><div class="sub" style="color:var(--success);">↑ 32% 较昨日</div></div><div class="stat-item"><div class="label">执行中订单</div><div class="value" style="color:var(--primary);">45</div><div class="sub">在册代练 32 人 · 5 机构</div></div><div class="stat-item"><div class="label">今日流水</div><div class="value">¥18,520</div><div class="sub">待结算 ¥6,800</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'order-mgmt\';curTab=\'待审核\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div><div><div style="font-weight:500;">订单审核</div><div style="font-size:var(--font-size-sm);color:var(--danger);">5 单待审核</div></div></div><div class="stat-item" onclick="curPage=\'booster-review\';openGroup=\'personnel\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--warning-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔍</div><div><div style="font-weight:500;">代练审核</div><div style="font-size:var(--font-size-sm);color:var(--danger);">2 人待审核</div></div></div><div class="stat-item" onclick="curPage=\'withdraw-audit\';openGroup=\'finance\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div><div><div style="font-weight:500;">提现审核</div><div style="font-size:var(--font-size-sm);color:var(--warning);">3 笔 ¥8,500</div></div></div><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🏛️</div><div><div style="font-weight:500;">机构结算</div><div style="font-size:var(--font-size-sm);color:var(--warning);">2 笔 ¥13,510</div></div></div></div></div></div></div>';
+    return '<div class="stat-row"><div class="stat-item" onclick="curPage=\'order-mgmt\';curTab=\'待审核\';openGroup=\'order\';renderTree();renderContent()"><div class="label">待审核订单</div><div class="value" style="color:var(--danger);">5</div><div class="sub">客服待处理 →</div></div><div class="stat-item" onclick="curPage=\'order-mgmt\';openGroup=\'order\';renderTree();renderContent()"><div class="label">待验收订单</div><div class="value" style="color:var(--warning);">12</div><div class="sub">客服待处理 →</div></div><div class="stat-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;"><div class="label">待审核代练（二期）</div><div class="value" style="color:var(--danger);">2</div><div class="sub">运营待处理 →</div></div><div class="stat-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;"><div class="label">待审核提现（二期）</div><div class="value" style="color:var(--warning);">3</div><div class="sub">¥8,500 财务待处理 →</div></div></div><div class="stat-row"><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()"><div class="label">机构结算申请</div><div class="value" style="color:var(--warning);">2</div><div class="sub">¥13,510 财务待处理 →</div></div><div class="stat-item"><div class="label">今日新增订单</div><div class="value">28</div><div class="sub" style="color:var(--success);">↑ 32% 较昨日</div></div><div class="stat-item"><div class="label">执行中订单</div><div class="value" style="color:var(--primary);">45</div><div class="sub">在册代练 32 人 · 5 机构</div></div><div class="stat-item"><div class="label">今日流水</div><div class="value">¥18,520</div><div class="sub">待结算 ¥6,800</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'order-mgmt\';curTab=\'待审核\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div><div><div style="font-weight:500;">订单审核</div><div style="font-size:var(--font-size-sm);color:var(--danger);">5 单待审核</div></div></div><div class="stat-item" style="display:flex;align-items:center;gap:12px;min-width:200px;opacity:.5;cursor:not-allowed;pointer-events:none;"><div style="width:40px;height:40px;background:var(--warning-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔍</div><div><div style="font-weight:500;">代练审核（二期）</div><div style="font-size:var(--font-size-sm);color:var(--danger);">2 人待审核</div></div></div><div class="stat-item" style="display:flex;align-items:center;gap:12px;min-width:200px;opacity:.5;cursor:not-allowed;pointer-events:none;"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div><div><div style="font-weight:500;">提现审核（二期）</div><div style="font-size:var(--font-size-sm);color:var(--warning);">3 笔 ¥8,500</div></div></div><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🏛️</div><div><div style="font-weight:500;">机构结算</div><div style="font-size:var(--font-size-sm);color:var(--warning);">2 笔 ¥13,510</div></div></div></div></div></div></div>';
   }
   // ── 平台运营：待审核代练 + 订单池分配 + 录入订单 ──
   if(r==='operator'){
-    return '<div class="stat-row"><div class="stat-item" onclick="curPage=\'booster-review\';openGroup=\'personnel\';renderTree();renderContent()"><div class="label">待审核代练身份</div><div class="value" style="color:var(--danger);">2</div><div class="sub">需尽快审核 →</div></div><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()"><div class="label">订单池可分配</div><div class="value" style="color:var(--primary);">8</div><div class="sub">待指派代练/机构 →</div></div><div class="stat-item"><div class="label">今日新增订单</div><div class="value">28</div><div class="sub" style="color:var(--success);">↑ 32% 较昨日</div></div><div class="stat-item"><div class="label">执行中订单</div><div class="value" style="color:var(--primary);">45</div><div class="sub">待验收 12 · 告警 2</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'order-entry\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">➕</div><div><div style="font-weight:500;">录入订单</div><div style="font-size:var(--font-size-sm);color:var(--text-secondary);">手动 / Excel / API</div></div></div><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--primary);"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div><div style="font-weight:500;">订单池分配</div><div style="font-size:var(--font-size-sm);color:var(--primary);">8 单待分配</div></div></div><div class="stat-item" onclick="curPage=\'booster-review\';openGroup=\'personnel\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--danger);"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔍</div><div><div style="font-weight:500;">代练身份审核</div><div style="font-size:var(--font-size-sm);color:var(--danger);">2 人待审核</div></div></div></div></div></div></div>';
+    return '<div class="stat-row"><div class="stat-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;"><div class="label">待审核代练身份（二期）</div><div class="value" style="color:var(--danger);">2</div><div class="sub">需尽快审核 →</div></div><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()"><div class="label">订单池可分配</div><div class="value" style="color:var(--primary);">8</div><div class="sub">待指派代练/机构 →</div></div><div class="stat-item"><div class="label">今日新增订单</div><div class="value">28</div><div class="sub" style="color:var(--success);">↑ 32% 较昨日</div></div><div class="stat-item"><div class="label">执行中订单</div><div class="value" style="color:var(--primary);">45</div><div class="sub">待验收 12 · 告警 2</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'order-entry\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">➕</div><div><div style="font-weight:500;">录入订单</div><div style="font-size:var(--font-size-sm);color:var(--text-secondary);">手动 / Excel / API</div></div></div><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--primary);"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div><div style="font-weight:500;">订单池分配</div><div style="font-size:var(--font-size-sm);color:var(--primary);">8 单待分配</div></div></div><div class="stat-item" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--danger);opacity:.5;cursor:not-allowed;pointer-events:none;"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🔍</div><div><div style="font-weight:500;">代练身份审核（二期）</div><div style="font-size:var(--font-size-sm);color:var(--danger);">2 人待审核</div></div></div></div></div></div></div>';
   }
   // ── 平台客服：待审核订单 + 待验收订单 ──
   if(r==='cs'){
@@ -283,7 +296,7 @@ function rHome(){
   }
   // ── 平台财务：机构结算申请 + 提现申请 ──
   if(r==='finance'){
-    return '<div class="stat-row"><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()"><div class="label">机构结算申请</div><div class="value" style="color:var(--warning);">2</div><div class="sub">¥13,510 待打款 →</div></div><div class="stat-item" onclick="curPage=\'withdraw-audit\';openGroup=\'finance\';renderTree();renderContent()"><div class="label">提现申请</div><div class="value" style="color:var(--danger);">3</div><div class="sub">¥8,500 待审核 →</div></div><div class="stat-item"><div class="label">本月已结算</div><div class="value" style="color:var(--success);">¥68,500</div><div class="sub">代练 ¥38,200 · 机构 ¥24,300 · 客服 ¥6,000</div></div><div class="stat-item"><div class="label">本月平台收入</div><div class="value">¥98,200</div><div class="sub" style="color:var(--success);">利润率 30.2%</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--warning);"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🏛️</div><div><div style="font-weight:500;">机构结算处理</div><div style="font-size:var(--font-size-sm);color:var(--warning);">2 笔 ¥13,510</div></div></div><div class="stat-item" onclick="curPage=\'withdraw-audit\';openGroup=\'finance\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--danger);"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div><div><div style="font-weight:500;">提现审核处理</div><div style="font-size:var(--font-size-sm);color:var(--danger);">3 笔 ¥8,500</div></div></div></div></div></div></div>';
+    return '<div class="stat-row"><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()"><div class="label">机构结算申请</div><div class="value" style="color:var(--warning);">2</div><div class="sub">¥13,510 待打款 →</div></div><div class="stat-item" style="opacity:.5;cursor:not-allowed;pointer-events:none;"><div class="label">提现申请（二期）</div><div class="value" style="color:var(--danger);">3</div><div class="sub">¥8,500 待审核 →</div></div><div class="stat-item"><div class="label">本月已结算</div><div class="value" style="color:var(--success);">¥68,500</div><div class="sub">代练 ¥38,200 · 机构 ¥24,300 · 客服 ¥6,000</div></div><div class="stat-item"><div class="label">本月平台收入</div><div class="value">¥98,200</div><div class="sub" style="color:var(--success);">利润率 30.2%</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'guild-settlement\';openGroup=\'finance\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--warning);"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🏛️</div><div><div style="font-weight:500;">机构结算处理</div><div style="font-size:var(--font-size-sm);color:var(--warning);">2 笔 ¥13,510</div></div></div><div class="stat-item" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--danger);opacity:.5;cursor:not-allowed;pointer-events:none;"><div style="width:40px;height:40px;background:var(--danger-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div><div><div style="font-weight:500;">提现审核处理（二期）</div><div style="font-size:var(--font-size-sm);color:var(--danger);">3 笔 ¥8,500</div></div></div></div></div></div></div>';
   }
   // ── 机构管理员 / 机构运营：录入 + 验收 + 结算 ──
   if(r==='guild_admin'||r==='guild_operator'){
@@ -291,18 +304,31 @@ function rHome(){
   }
   // ── 代练：个人接单/提现 ──
   if(r==='booster'){
-    return '<div class="stat-row"><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()"><div class="label">可接订单</div><div class="value" style="color:var(--primary);">8</div><div class="sub">订单池有单可抢 →</div></div><div class="stat-item"><div class="label">执行中订单</div><div class="value" style="color:var(--warning);">3</div><div class="sub">待提交交付 1 单</div></div><div class="stat-item" onclick="curPage=\'my-assets\';openGroup=\'workspace\';renderTree();renderContent()"><div class="label">本月收入</div><div class="value" style="color:var(--success);">¥4,800</div><div class="sub">可提现 ¥2,500 →</div></div><div class="stat-item"><div class="label">好评率</div><div class="value">98.5%</div><div class="sub" style="color:var(--success);">↑ 0.3%</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--primary);"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div><div style="font-weight:500;">接单大厅</div><div style="font-size:var(--font-size-sm);color:var(--primary);">8 单可抢</div></div></div><div class="stat-item" onclick="curPage=\'my-assets\';openGroup=\'workspace\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--warning);"><div style="width:40px;height:40px;background:var(--warning-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div><div><div style="font-weight:500;">提现</div><div style="font-size:var(--font-size-sm);color:var(--warning);">可提现 ¥2,500</div></div></div></div></div></div></div>';
+    return '<div class="stat-row"><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()"><div class="label">可接订单</div><div class="value" style="color:var(--primary);">8</div><div class="sub">订单池有单可抢 →</div></div><div class="stat-item"><div class="label">执行中订单</div><div class="value" style="color:var(--warning);">3</div><div class="sub">待提交交付 1 单</div></div><div class="stat-item" onclick="curPage=\'my-assets\';openGroup=\'workspace\';renderTree();renderContent()"><div class="label">本月收入</div><div class="value" style="color:var(--success);">¥4,800</div><div class="sub">可提现 ¥2,500 →</div></div><div class="stat-item"><div class="label">好评率</div><div class="value">98.5%</div><div class="sub" style="color:var(--success);">↑ 0.3%</div></div></div><div style="margin-top:16px;"><div class="ant-card"><div class="ant-card-head">⚡ 快捷操作</div><div class="ant-card-body"><div style="display:flex;gap:16px;flex-wrap:wrap;"><div class="stat-item" onclick="curPage=\'order-mgmt\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--primary);"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div><div><div style="font-weight:500;">我的订单</div><div style="font-size:var(--font-size-sm);color:var(--primary);">3 单执行中</div></div></div><div class="stat-item" onclick="curPage=\'order-pool\';openGroup=\'order\';renderTree();renderContent()" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--primary);"><div style="width:40px;height:40px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">📦</div><div><div style="font-weight:500;">接单大厅</div><div style="font-size:var(--font-size-sm);color:var(--primary);">8 单可抢</div></div></div><div class="stat-item" style="display:flex;align-items:center;gap:12px;min-width:200px;border-color:var(--border);opacity:.5;cursor:not-allowed;pointer-events:none;"><div style="width:40px;height:40px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">💳</div><div><div style="font-weight:500;">提现（二期开放）</div><div style="font-size:var(--font-size-sm);color:var(--text-secondary);">可提现 ¥2,500</div></div></div></div></div></div></div>';
   }
   return '';
 }
 
 // ── 结算/提现弹窗（全局） ──
 function openGuildSettle(){
-  var body='<div class="ant-form-item"><div class="ant-form-label">机构名称</div><input class="ant-input" value="三角洲机构A组" readonly style="background:var(--bg);"></div>'+
+  var bankBody='<div class="ant-form-item"><div class="ant-form-label">机构名称</div><input class="ant-input" value="三角洲机构A组" readonly style="background:var(--bg);"></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款银行</div><select class="ant-input"><option value="">请选择开户银行</option><option>中国工商银行</option><option>中国建设银行</option><option>中国农业银行</option><option>中国银行</option><option>招商银行</option><option>交通银行</option><option>邮储银行</option></select></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>开户行</div><input class="ant-input" placeholder="如：中国工商银行深圳南山支行"></div>'+
     '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款账户名</div><input class="ant-input" placeholder="对公账户全称"></div>'+
-    '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款账号</div><input class="ant-input" placeholder="银行卡号"></div>'+
+    '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>收款账号</div><input class="ant-input" placeholder="银行卡号"></div>';
+  var alipayBody='<div class="ant-form-item"><div class="ant-form-label">机构名称</div><input class="ant-input" value="三角洲机构A组" readonly style="background:var(--bg);"></div>'+
+    '<div style="margin:16px 0;border-top:1px solid var(--border-light);"></div>'+
+    '<div style="font-size:var(--font-size-sm);color:var(--text-secondary);margin-bottom:12px;">收款账户（来自个人中心支付宝认证）</div>'+
+    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">真实姓名</div><div class="bind-val">'+profile.alipayName+'</div></div></div>'+
+    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">身份证号</div><div class="bind-val">'+profile.alipayIdCard+'</div></div></div>'+
+    '<div class="bind-item" style="margin-bottom:12px;"><div class="bind-info"><div class="bind-label">支付宝账号</div><div class="bind-val">'+profile.alipayAccount+'</div></div></div>'+
+    '<div class="ant-alert">结算款将打入上述支付宝账号，预计 1-3 个工作日到账。</div>';
+  var body='<div class="ant-tabs" style="margin-bottom:16px;">'+
+    '<div class="ant-tab active" id="settle-tab-bank" onclick="document.getElementById(\'settle-bank\').style.display=\'\';document.getElementById(\'settle-alipay\').style.display=\'none\';this.classList.add(\'active\');document.getElementById(\'settle-tab-alipay\').classList.remove(\'active\');">🏦 银行卡结算</div>'+
+    '<div class="ant-tab" id="settle-tab-alipay" onclick="document.getElementById(\'settle-alipay\').style.display=\'\';document.getElementById(\'settle-bank\').style.display=\'none\';this.classList.add(\'active\');document.getElementById(\'settle-tab-bank\').classList.remove(\'active\');">💳 支付宝结算</div>'+
+    '</div>'+
+    '<div id="settle-bank">'+bankBody+'</div>'+
+    '<div id="settle-alipay" style="display:none;">'+alipayBody+'</div>'+
     '<div class="ant-form-item"><div class="ant-form-label">备注说明</div><textarea class="ant-input" style="min-height:48px;" placeholder="选填"></textarea></div>'+
     '<div style="border-top:1px solid var(--border-light);padding-top:16px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;">'+
       '<span style="color:var(--text-secondary);">结算金额</span>'+
@@ -330,7 +356,7 @@ function rMyAssets(){
   if(isGuild){
     h+='<div class="stat-row"><div class="stat-item"><div class="label">机构账户余额</div><div class="value" style="color:var(--primary);">¥24,880.00</div><div class="sub">可结算金额 ¥8,750.00</div></div><div class="stat-item"><div class="label">待结算金额</div><div class="value" style="color:var(--warning);">¥8,750.00</div><div class="sub">已完成订单 28 笔</div></div><div class="stat-item"><div class="label">本月流水</div><div class="value" style="color:var(--success);">¥32,500</div><div class="sub">较上月 ↑ 18%</div></div><div class="stat-item"><div class="label">累计结算</div><div class="value">¥186,200</div><div class="sub">累计完成 428 单</div></div></div>'+(currentRole==='guild_admin'?'<div style="margin-bottom:16px;"><button class="ant-btn ant-btn-primary" onclick="openGuildSettle()">🏛️ 申请机构结算</button></div>':'')+'';
   }else{
-    h+='<div class="stat-row"><div class="stat-item"><div class="label">账户余额</div><div class="value" style="color:var(--primary);">¥2,500.00</div><div class="sub">可提现余额</div></div><div class="stat-item"><div class="label">冻结金额</div><div class="value" style="color:var(--warning);">¥1,280.00</div><div class="sub">执行中订单 3 笔</div></div><div class="stat-item"><div class="label">累计收益</div><div class="value" style="color:var(--success);">¥68,500</div><div class="sub">本月 ¥4,800</div></div><div class="stat-item"><div class="label">代练币</div><div class="value">350 M</div><div class="sub">1M = 100W 游戏币</div></div></div><div style="margin-bottom:16px;"><button class="ant-btn ant-btn-primary" onclick="openBoosterWithdraw()">💳 申请提现</button></div>';
+    h+='<div class="stat-row"><div class="stat-item"><div class="label">账户余额</div><div class="value" style="color:var(--primary);">¥2,500.00</div><div class="sub">可提现余额</div></div><div class="stat-item"><div class="label">冻结金额</div><div class="value" style="color:var(--warning);">¥1,280.00</div><div class="sub">执行中订单 3 笔</div></div><div class="stat-item"><div class="label">累计收益</div><div class="value" style="color:var(--success);">¥68,500</div><div class="sub">本月 ¥4,800</div></div><div class="stat-item"><div class="label">代练币</div><div class="value">350 M</div><div class="sub">1M = 100W 游戏币</div></div></div><div style="margin-bottom:16px;"><button class="ant-btn ant-btn-disabled">💳 申请提现（二期开放）</button></div>';
   }
   // Asset flow table
   h+='<div class="ant-card"><div class="ant-card-head">💳 资产明细流水</div><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>时间</th><th>类型</th><th>关联订单</th><th>金额变动</th><th>余额</th><th>备注</th></tr></thead><tbody>';
@@ -510,6 +536,10 @@ function rOrderMgmt(){
     {id:'DD202605200003',title:'排位白银→黄金',status:'已暂停',st:'ant-tag-danger',prog:'45%',asset:'3M/7M',booster:'赵代练',settle:'-',amt:'¥180',dep:'¥36',cs:'小周',src:'内部录入',studio:'-',contact:'132****0009',type:'代练',game:'三角洲',zone:'微信',role:'玩家K',time:'05-20 15:00',guild:'-'}
   ];
   var filtered=curTab==='全部'?orders:orders.filter(function(r){return r.status===curTab;});
+  // 角色数据过滤：机构只看本机构数据，代练只看自己的数据
+  var uGuild=currentUserGuild(),uName=currentBoosterName();
+  if(uGuild) filtered=filtered.filter(function(r){return r.guild===uGuild;});
+  if(uName) filtered=filtered.filter(function(r){return r.booster===uName;});
   // Count per tab
   function cnt(s){return s==='全部'?orders.length:orders.filter(function(r){return r.status===s;}).length;}
   var dotTabs=['待审核','待验收','已暂停'];
@@ -792,7 +822,7 @@ function openPosEdit(isNew,pcode){
     if(!p) return;
   }
   var title=isNew?'添加岗位':'编辑岗位 - '+(p?p.name:'');
-  var name=p?p.name:'',code=p?p.code:'',desc=p?p.desc:'',roles=p?p.roles:'';
+  var name=p?p.name:'',code=p?p.code:'',desc=p?p.desc:'',roles=p?p.roles:'',pstatus=p?p.status:1;
   var allRoles=['平台管理员','平台运营','平台客服','平台财务','机构管理员','机构运营','代练'];
   var selRoles=roles?roles.split('、'):[];
   var rolesCheck='';
@@ -800,7 +830,7 @@ function openPosEdit(isNew,pcode){
     var checked=selRoles.indexOf(r)!==-1?' checked':'';
     rolesCheck+='<label style="display:inline-flex;align-items:center;gap:4px;margin-right:16px;margin-bottom:8px;cursor:pointer;"><input type="checkbox" value="'+r+'" class="peRole"'+checked+'> '+r+'</label>';
   });
-  var body='<div class="ant-row"><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>岗位名称</div><input class="ant-input" id="peName" value="'+name+'" placeholder="请输入岗位名称"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>岗位代码</div><input class="ant-input" id="peCode" value="'+code+'" placeholder="请输入岗位代码"'+(isNew?'':' readonly style="background:#f5f5f5"')+'></div></div><div class="ant-form-item"><div class="ant-form-label">关联角色</div><div style="padding:8px 0;">'+rolesCheck+'</div></div><div class="ant-form-item"><div class="ant-form-label">描述</div><textarea class="ant-input" id="peDesc" placeholder="请简要描述该岗位的职责" rows="3">'+desc+'</textarea></div>';
+  var body='<div class="ant-row"><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>岗位名称</div><input class="ant-input" id="peName" value="'+name+'" placeholder="请输入岗位名称"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>岗位代码</div><input class="ant-input" id="peCode" value="'+code+'" placeholder="请输入岗位代码"'+(isNew?'':' readonly style="background:#f5f5f5"')+'></div></div><div class="ant-form-item"><div class="ant-form-label">关联角色</div><div style="padding:8px 0;">'+rolesCheck+'</div></div><div class="ant-form-item"><div class="ant-form-label">描述</div><textarea class="ant-input" id="peDesc" placeholder="请简要描述该岗位的职责" rows="3">'+desc+'</textarea></div><div class="ant-form-item"><div class="ant-form-label">状态</div><div style="padding:8px 0;"><label style="display:inline-flex;align-items:center;gap:4px;margin-right:24px;cursor:pointer;"><input type="radio" name="peStatus" value="1"'+(pstatus===1?' checked':'')+'> 启用</label><label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="peStatus" value="0"'+(pstatus===0?' checked':'')+'> 禁用</label></div></div>';
   var footer='<button class="ant-btn" onclick="closeModal()">取消</button>'+(isNew?'<button class="ant-btn ant-btn-primary" onclick="saveNewPos()">保存</button>':'<button class="ant-btn ant-btn-primary" onclick="saveEditPos(\''+pcode+'\')">保存</button>');
   openModal(title,body,footer);
 }
@@ -813,7 +843,9 @@ function saveNewPos(){
   if(posList.some(function(x){return x.code===code;})) return toast('岗位代码 <span style="color:var(--danger);">'+code+'</span> 已存在，请更换');
   var sel=document.querySelectorAll('.peRole:checked');
   var roles=[];sel.forEach(function(cb){roles.push(cb.value);});
-  posList.push({code:code,name:name,roles:roles.join('、')||'-',desc:desc||'-',status:1,createdBy:'当前用户',createdAt:new Date().toISOString().slice(0,10)});
+  var statusEl=document.querySelector('input[name="peStatus"]:checked');
+  var pstatus=statusEl?parseInt(statusEl.value):1;
+  posList.push({code:code,name:name,roles:roles.join('、')||'-',desc:desc||'-',status:pstatus,createdBy:'当前用户',createdAt:new Date().toISOString().slice(0,10)});
   closeModal();
   toast('岗位 <span style="color:var(--danger);">'+name+'</span> 添加成功');
   renderContent();
@@ -826,7 +858,8 @@ function saveEditPos(pcode){
   if(!p) return;
   var sel=document.querySelectorAll('.peRole:checked');
   var roles=[];sel.forEach(function(cb){roles.push(cb.value);});
-  p.name=name;p.desc=desc||'-';p.roles=roles.join('、')||'-';
+  var statusEl=document.querySelector('input[name="peStatus"]:checked');
+  p.name=name;p.desc=desc||'-';p.roles=roles.join('、')||'-';p.status=statusEl?parseInt(statusEl.value):1;
   closeModal();
   toast('岗位 <span style="color:var(--danger);">'+name+'</span> 信息已更新');
   renderContent();
@@ -850,7 +883,7 @@ function rUserMgmt(){
     if(orgVal&&u.guild!==orgVal) return;
     if(kwVal&&u.uid.toLowerCase().indexOf(kwVal)===-1&&u.name.toLowerCase().indexOf(kwVal)===-1&&u.tel.indexOf(kwVal)===-1) return;
     var gd=u.guild==='-'?'-':'<span class="ant-tag ant-tag-purple">'+u.guild+'</span>';
-    h+='<tr><td style="white-space:nowrap;"><button class="ant-btn ant-btn-sm" onclick="openUserEdit(false,\''+u.uid+'\')">编辑</button> <button class="ant-btn ant-btn-sm" onclick="openResetPwd(\''+u.uid+'\')">重置密码</button> <button class="ant-btn ant-btn-sm ant-btn-danger" onclick="deleteUser(\''+u.uid+'\')">删除</button></td><td style="font-weight:500;">'+u.uid+'</td><td>'+u.name+'</td><td>'+u.tel+'</td><td>'+gd+'</td><td>'+u.pos+'</td></tr>';
+    h+='<tr><td style="white-space:nowrap;"><button class="ant-btn ant-btn-sm" onclick="openUserEdit(false,\''+u.uid+'\')">编辑</button> <button class="ant-btn ant-btn-sm ant-btn-danger" onclick="deleteUser(\''+u.uid+'\')">删除</button></td><td style="font-weight:500;">'+u.uid+'</td><td>'+u.name+'</td><td>'+u.tel+'</td><td>'+gd+'</td><td>'+u.pos+'</td></tr>';
   });
   h+='</tbody></table></div></div></div>';
   return h;
@@ -896,21 +929,17 @@ function openUserEdit(isNew,uid){
   }
   var title=isNew?'添加用户':'编辑用户 - '+uid;
   var acct=u?u.acct:'',name=u?u.name:'',tel=u?u.tel:'',guild=u?u.guild:'',pos=u?u.pos:'';
-  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>用户账号</div><input class="ant-input" id="ueAcct" value="'+(isNew?'':acct)+'" placeholder="请输入用户账号"></div><div class="ant-row"><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>登陆密码</div><input class="ant-input" type="password" id="uePwd" placeholder="请输入登陆密码"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>确认密码</div><input class="ant-input" type="password" id="uePwd2" placeholder="请再次输入登陆密码"></div></div><div class="ant-row"><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>用户姓名</div><input class="ant-input" id="ueName" value="'+name+'" placeholder="请输入用户姓名"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>手机号</div><input class="ant-input" id="ueTel" value="'+tel+'" placeholder="请输入手机号"></div></div><div class="ant-row"><div class="ant-form-item"><div class="ant-form-label">所属组织</div><select class="ant-input" id="ueGuild"><option value="">请选择组织</option><option value="平台"'+(guild==='平台'?' selected':'')+'>平台</option><option value="三角洲机构A组"'+(guild==='三角洲机构A组'?' selected':'')+'>三角洲机构A组</option><option value="三角洲机构B组"'+(guild==='三角洲机构B组'?' selected':'')+'>三角洲机构B组</option></select></div><div class="ant-form-item"><div class="ant-form-label">岗位</div><select class="ant-input" id="uePos"><option value="">请选择岗位</option><option value="会长"'+('会长'===pos?' selected':'')+'>会长</option><option value="运营"'+('运营'===pos?' selected':'')+'>运营</option><option value="客服"'+('客服'===pos?' selected':'')+'>客服</option><option value="代练"'+('代练'===pos?' selected':'')+'>代练</option></select></div></div>';
+  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>用户账号</div><input class="ant-input" id="ueAcct" value="'+(isNew?'':acct)+'" placeholder="请输入用户账号"></div><div class="ant-row"><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>用户姓名</div><input class="ant-input" id="ueName" value="'+name+'" placeholder="请输入用户姓名"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>手机号</div><input class="ant-input" id="ueTel" value="'+tel+'" placeholder="请输入手机号"></div></div><div class="ant-row"><div class="ant-form-item"><div class="ant-form-label">所属组织</div><select class="ant-input" id="ueGuild"><option value="">请选择组织</option><option value="平台"'+(guild==='平台'?' selected':'')+'>平台</option><option value="三角洲机构A组"'+(guild==='三角洲机构A组'?' selected':'')+'>三角洲机构A组</option><option value="三角洲机构B组"'+(guild==='三角洲机构B组'?' selected':'')+'>三角洲机构B组</option></select></div><div class="ant-form-item"><div class="ant-form-label">岗位</div><select class="ant-input" id="uePos"><option value="">请选择岗位</option><option value="会长"'+('会长'===pos?' selected':'')+'>会长</option><option value="运营"'+('运营'===pos?' selected':'')+'>运营</option><option value="客服"'+('客服'===pos?' selected':'')+'>客服</option><option value="代练"'+('代练'===pos?' selected':'')+'>代练</option></select></div></div>';
   var footer='<button class="ant-btn" onclick="closeModal()">取消</button>'+(isNew?'<button class="ant-btn ant-btn-primary" onclick="saveNewUser()">保存</button>':'<button class="ant-btn ant-btn-primary" onclick="saveEditUser(\''+uid+'\')">保存</button>');
   openModal(title,body,footer);
 }
 function saveNewUser(){
   var acct=document.getElementById('ueAcct').value.trim();
-  var pwd=document.getElementById('uePwd').value;
-  var pwd2=document.getElementById('uePwd2').value;
   var name=document.getElementById('ueName').value.trim();
   var tel=document.getElementById('ueTel').value.trim();
   var guild=document.getElementById('ueGuild').value;
   var pos=document.getElementById('uePos').value;
   if(!acct) return toast('请输入<span style="color:var(--danger);">用户账号</span>');
-  if(!pwd) return toast('请输入<span style="color:var(--danger);">登陆密码</span>');
-  if(pwd!==pwd2) return toast('两次输入的<span style="color:var(--danger);">密码不一致</span>');
   if(!name) return toast('请输入<span style="color:var(--danger);">用户姓名</span>');
   if(!tel) return toast('请输入<span style="color:var(--danger);">手机号</span>');
   var uid='U'+new Date().toISOString().slice(0,10).replace(/-/g,'')+String(userNextId).padStart(3,'0');
@@ -933,18 +962,6 @@ function saveEditUser(uid){
   closeModal();
   toast('用户 <span style="color:var(--danger);">'+name+'</span> 信息已更新');
   renderContent();
-}
-function openResetPwd(uid){
-  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>新密码</div><input class="ant-input" type="password" id="rpPwd" placeholder="请输入新密码"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>确认密码</div><input class="ant-input" type="password" id="rpPwd2" placeholder="请再次输入新密码"></div>';
-  openModal('重置密码 - '+uid,body,'<button class="ant-btn" onclick="closeModal()">取消</button><button class="ant-btn ant-btn-primary" onclick="confirmResetPwd(\''+uid+'\')">确认重置</button>');
-}
-function confirmResetPwd(uid){
-  var pwd=document.getElementById('rpPwd').value;
-  var pwd2=document.getElementById('rpPwd2').value;
-  if(!pwd) return toast('请输入<span style="color:var(--danger);">新密码</span>');
-  if(pwd!==pwd2) return toast('两次输入的<span style="color:var(--danger);">密码不一致</span>');
-  closeModal();
-  toast('用户 <span style="color:var(--danger);">'+uid+'</span> 密码已重置');
 }
 function deleteUser(uid){
   var u=userList.find(function(x){return x.uid===uid;});
@@ -999,8 +1016,81 @@ function openServiceConfig(){
   body+='</tbody></table></div>';
   openModal('🛠 服务类型配置',body,'<button class="ant-btn" onclick="closeModal()">关闭</button>');
 }
+// ── 游戏属性配置 ──
+var gameAttrList=[{id:1,name:'游戏账号',inputType:'输入框',children:[]},{id:2,name:'当前段位',inputType:'下拉选择',children:['青铜','黄金','铂金','钻石','黑鹰','统帅']},{id:3,name:'目标段位',inputType:'下拉选择',children:['黄金','铂金','钻石','黑鹰','统帅']},{id:4,name:'需要陪玩',inputType:'勾选',children:[]},{id:5,name:'是否加急',inputType:'勾选',children:[]}];
+var gameAttrNextId=6;
+function openAttrConfig(){
+  var body='<div style="display:flex;justify-content:space-between;margin-bottom:12px;"><div style="font-weight:600;">三角洲行动 — 属性配置</div><button class="ant-btn ant-btn-primary ant-btn-sm" onclick="openAttrEdit(true)">+ 添加属性</button></div>';
+  if(gameAttrList.length===0){body+='<div style="text-align:center;padding:40px;color:var(--text-secondary);">暂无属性配置，点击上方按钮添加</div>';}
+  else {
+    body+='<div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>属性名称</th><th>输入方式</th><th>下级属性</th><th>操作</th></tr></thead><tbody>';
+    gameAttrList.forEach(function(a){
+      var childrenStr=a.children.length?a.children.join('、'):'-';
+      var typeTag=a.inputType==='输入框'?'<span class="ant-tag ant-tag-primary">输入框</span>':a.inputType==='勾选'?'<span class="ant-tag ant-tag-success">勾选</span>':'<span class="ant-tag ant-tag-warning">下拉选择</span>';
+      body+='<tr><td style="font-weight:500;">'+a.name+'</td><td>'+typeTag+'</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+(a.children.join(',')||'')+'">'+childrenStr+'</td><td><button class="ant-btn ant-btn-sm" onclick="openAttrEdit(false,'+a.id+')">编辑</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="deleteAttr('+a.id+')">删除</button></td></tr>';
+    });
+    body+='</tbody></table></div>';
+  }
+  openModal('🔧 属性配置',body,'<button class="ant-btn" onclick="closeModal()">关闭</button>');
+}
+function addAttrChild(){
+  var el=document.getElementById('ach-list');
+  var i=el.children.length;
+  var d=document.createElement('div');
+  d.style.cssText='display:flex;gap:8px;margin-bottom:8px;';
+  d.innerHTML='<input class="ant-input" placeholder="如：青铜" style="flex:1;"><button class="ant-btn ant-btn-sm" onclick="this.parentNode.parentNode.removeChild(this.parentNode)" style="flex-shrink:0;">✕</button>';
+  el.appendChild(d);
+}
+function buildAttrChildrenHTML(children){
+  var h='';
+  children.forEach(function(c,i){
+    h+='<div style="display:flex;gap:8px;margin-bottom:8px;"><input class="ant-input" value="'+c+'" placeholder="如：青铜" style="flex:1;"><button class="ant-btn ant-btn-sm" onclick="this.parentNode.parentNode.removeChild(this.parentNode)" style="flex-shrink:0;">✕</button></div>';
+  });
+  return h;
+}
+function openAttrEdit(isNew,id){
+  var a=null;
+  if(!isNew){a=gameAttrList.find(function(x){return x.id===id;});if(!a)return;}
+  var title=isNew?'添加属性':'编辑属性 - '+(a?a.name:'');
+  var name=a?a.name:'',inputType=a?a.inputType:'输入框',children=a?a.children:[];
+  var selInput='<option value="输入框"'+(inputType==='输入框'?' selected':'')+'>输入框</option><option value="勾选"'+(inputType==='勾选'?' selected':'')+'>勾选</option><option value="下拉选择"'+(inputType==='下拉选择'?' selected':'')+'>下拉选择</option>';
+  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>属性名称</div><input class="ant-input" id="aeName" value="'+name+'" placeholder="如：当前段位"></div>'+
+    '<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>输入方式</div><select class="ant-input" id="aeInputType" onchange="document.getElementById(\'children-area\').style.display=this.value===\'下拉选择\'?\'\':\'none\'">'+selInput+'</select></div>'+
+    '<div class="ant-form-item" id="children-area" style="display:'+(inputType==='下拉选择'?'':'none')+';"><div class="ant-form-label">下级属性</div><div id="ach-list">'+buildAttrChildrenHTML(children)+'</div><button class="ant-btn ant-btn-sm" onclick="addAttrChild()">+ 添加选项</button></div>';
+  var footer='<button class="ant-btn" onclick="closeModal()">取消</button><button class="ant-btn ant-btn-primary" onclick="'+(isNew?'saveNewAttr()':'saveEditAttr('+id+')')+'">保存</button>';
+  openModal(title,body,footer);
+}
+function saveNewAttr(){
+  var name=document.getElementById('aeName').value.trim();
+  var inputType=document.getElementById('aeInputType').value;
+  if(!name) return toast('请输入<span style="color:var(--danger);">属性名称</span>');
+  var children=[];
+  if(inputType==='下拉选择'){
+    var inputs=document.querySelectorAll('#ach-list input');
+    inputs.forEach(function(inp){var v=inp.value.trim();if(v) children.push(v);});
+  }
+  gameAttrList.push({id:gameAttrNextId++,name:name,inputType:inputType,children:children});
+  closeModal();toast('属性 <span style="color:var(--danger);">'+name+'</span> 添加成功');openAttrConfig();
+}
+function saveEditAttr(id){
+  var name=document.getElementById('aeName').value.trim();
+  var inputType=document.getElementById('aeInputType').value;
+  if(!name) return toast('请输入<span style="color:var(--danger);">属性名称</span>');
+  var a=gameAttrList.find(function(x){return x.id===id;});if(!a)return;
+  a.name=name;a.inputType=inputType;a.children=[];
+  if(inputType==='下拉选择'){
+    var inputs=document.querySelectorAll('#ach-list input');
+    inputs.forEach(function(inp){var v=inp.value.trim();if(v) a.children.push(v);});
+  }
+  closeModal();toast('属性 <span style="color:var(--danger);">'+name+'</span> 已更新');openAttrConfig();
+}
+function deleteAttr(id){
+  var a=gameAttrList.find(function(x){return x.id===id;});if(!a)return;
+  gameAttrList=gameAttrList.filter(function(x){return x.id!==id;});
+  toast('属性 <span style="color:var(--danger);">'+a.name+'</span> 已删除');openAttrConfig();
+}
 function rGameConfig(){
-  var h='<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><div style="font-size:var(--font-size-lg);font-weight:600;">游戏配置</div><button class="ant-btn ant-btn-primary" onclick="openGameEdit(true)">+ 添加游戏</button></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th class="sticky-col">操作</th><th>游戏ID</th><th>游戏名称</th><th>游戏图标</th><th>服务类型</th><th>订单类型</th><th>创建时间</th><th>创建人</th><th>状态</th></tr></thead><tbody><tr><td class="sticky-col" style="white-space:nowrap;"><button class="ant-btn ant-btn-sm" onclick="openGameEdit(false)">编辑</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'已删除\')">删除</button> <button class="ant-btn ant-btn-sm" onclick="openServiceConfig()">服务配置</button></td><td>1002</td><td style="font-weight:500;">三角洲行动</td><td><span style="font-size:24px;">🎯</span></td><td><span class="ant-tag ant-tag-primary">排位上分</span> <span class="ant-tag ant-tag-success">任务代打</span> <span class="ant-tag ant-tag-purple">账号练级</span> <span class="ant-tag ant-tag-warning">装备刷取</span></td><td><span class="ant-tag ant-tag-primary">代练</span> <span class="ant-tag ant-tag-success">陪玩</span></td><td>2026-05-19 10:30</td><td>管理员</td><td><span style="display:inline-block;width:40px;height:22px;background:var(--primary);border-radius:11px;position:relative;cursor:pointer;" onclick="toast(\'状态已切换\')"><span style="position:absolute;right:2px;top:2px;width:18px;height:18px;background:#fff;border-radius:50%;"></span></span></td></tr></tbody></table></div></div></div>';
+  var h='<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><div style="font-size:var(--font-size-lg);font-weight:600;">游戏配置</div><button class="ant-btn ant-btn-primary" onclick="openGameEdit(true)">+ 添加游戏</button></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th class="sticky-col">操作</th><th>游戏ID</th><th>游戏名称</th><th>游戏图标</th><th>服务类型</th><th>订单类型</th><th>创建时间</th><th>创建人</th><th>状态</th></tr></thead><tbody><tr><td class="sticky-col" style="white-space:nowrap;"><button class="ant-btn ant-btn-sm" onclick="openGameEdit(false)">编辑</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="toast(\'已删除\')">删除</button> <button class="ant-btn ant-btn-sm" onclick="openServiceConfig()">服务配置</button> <button class="ant-btn ant-btn-sm" onclick="openAttrConfig()">属性配置</button></td><td>1002</td><td style="font-weight:500;">三角洲行动</td><td><span style="font-size:24px;">🎯</span></td><td><span class="ant-tag ant-tag-primary">排位上分</span> <span class="ant-tag ant-tag-success">任务代打</span> <span class="ant-tag ant-tag-purple">账号练级</span> <span class="ant-tag ant-tag-warning">装备刷取</span></td><td><span class="ant-tag ant-tag-primary">代练</span> <span class="ant-tag ant-tag-success">陪玩</span></td><td>2026-05-19 10:30</td><td>管理员</td><td><span style="display:inline-block;width:40px;height:22px;background:var(--primary);border-radius:11px;position:relative;cursor:pointer;" onclick="toast(\'状态已切换\')"><span style="position:absolute;right:2px;top:2px;width:18px;height:18px;background:#fff;border-radius:50%;"></span></span></td></tr></tbody></table></div></div></div>';
   return h;
 }
 
@@ -1039,10 +1129,157 @@ function rServiceTypeMgmt(){
   h+='</tbody></table></div></div></div>';
   return h;
 }
-function rPermissionMgmt(){var roles=[{code:'root',name:'平台管理员',builtin:'是',st:'ant-tag-success',stt:'启用',desc:'系统最高权限，处理特殊事件',time:'2026-05-19'},{code:'operator',name:'平台运营',builtin:'是',st:'ant-tag-success',stt:'启用',desc:'订单录入、代练管理、机构管理、系统配置',time:'2026-05-19'},{code:'cs',name:'平台客服',builtin:'是',st:'ant-tag-success',stt:'启用',desc:'订单审核、验收、结算',time:'2026-05-19'},{code:'finance',name:'平台财务',builtin:'是',st:'ant-tag-success',stt:'启用',desc:'提现审核、机构/代练/客服结算',time:'2026-05-20'},{code:'guild_admin',name:'机构管理员',builtin:'是',st:'ant-tag-success',stt:'启用',desc:'机构最高权限，管理本机构代练',time:'2026-05-20'},{code:'guild_operator',name:'机构运营',builtin:'是',st:'ant-tag-success',stt:'启用',desc:'订单录入，管理本机构人员和订单',time:'2026-05-20'},{code:'booster',name:'代练',builtin:'是',st:'ant-tag-success',stt:'启用',desc:'接单、执行、交付、提现',time:'2026-05-19'}];var h='<div style="margin-bottom:16px;"><button class="ant-btn ant-btn-primary">+ 添加角色</button></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>编码</th><th>名称</th><th>内置角色</th><th>状态</th><th>描述</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';roles.forEach(function(r){h+='<tr><td>'+r.code+'</td><td style="font-weight:500;">'+r.name+'</td><td><span class="ant-tag ant-tag-success">'+r.builtin+'</span></td><td><span class="ant-tag '+r.st+'">'+r.stt+'</span></td><td>'+r.desc+'</td><td>'+r.time+'</td><td><button class="ant-btn ant-btn-sm">编辑</button></td></tr>';});h+='</tbody></table></div></div></div>';return h;}
+// ── 权限管理 ──
+var roleList=[{code:'root',name:'平台管理员',builtin:true,status:1,desc:'系统最高权限，处理特殊事件',time:'2026-05-19',perms:{'home':1,'platform-assets':1,'my-assets':1,'my-assets-guild-settle':1,'order-entry':1,'order-entry-op':1,'order-mgmt':1,'order-pool':1,'guild-settlement':1,'guild-settlement-audit':1,'org-mgmt':1,'position-mgmt':1,'user-mgmt':1,'game-config':1,'game-config-attr':1,'service-type-mgmt':1,'service-type-config':1,'permission-mgmt':1,'permission-matrix':1}},{code:'operator',name:'平台运营',builtin:true,status:1,desc:'订单录入、代练管理、机构管理、系统配置',time:'2026-05-19',perms:{'home':1,'order-entry':1,'order-entry-op':1,'order-mgmt':1,'order-pool':1,'position-mgmt':1,'user-mgmt':1,'game-config':1,'game-config-attr':1,'service-type-mgmt':1,'service-type-config':1}},{code:'cs',name:'平台客服',builtin:true,status:1,desc:'订单审核、验收、结算',time:'2026-05-19',perms:{'home':1,'order-mgmt':1}},{code:'finance',name:'平台财务',builtin:true,status:1,desc:'提现审核、机构/代练/客服结算',time:'2026-05-20',perms:{'home':1,'order-mgmt':1,'guild-settlement':1,'guild-settlement-audit':1}},{code:'guild_admin',name:'机构管理员',builtin:true,status:1,desc:'机构最高权限，管理本机构代练',time:'2026-05-20',perms:{'home':1,'my-assets':1,'my-assets-guild-settle':1,'order-entry':1,'order-entry-op':1,'order-mgmt':1,'order-pool':1}},{code:'guild_operator',name:'机构运营',builtin:true,status:1,desc:'订单录入，管理本机构人员和订单',time:'2026-05-20',perms:{'home':1,'my-assets':1,'order-entry':1,'order-entry-op':1,'order-mgmt':1,'order-pool':1}},{code:'booster',name:'代练',builtin:true,status:1,desc:'接单、执行、交付、提现',time:'2026-05-19',perms:{'home':1,'my-assets':1,'order-mgmt':1,'order-pool':1}}];
+var permTreeData=[{id:'workspace',label:'工作台',children:[{id:'home',label:'首页',children:[]},{id:'platform-assets',label:'平台资产',children:[]},{id:'my-assets',label:'我的资产',children:[{id:'my-assets-guild-settle',label:'机构结算',children:[]}]}]},{id:'order',label:'订单管理',children:[{id:'order-entry',label:'订单录入',children:[{id:'order-entry-op',label:'操作',children:[]}]},{id:'order-mgmt',label:'订单管理',children:[]},{id:'order-pool',label:'订单池',children:[]}]},{id:'finance',label:'财务管理',children:[{id:'guild-settlement',label:'机构结算',children:[{id:'guild-settlement-audit',label:'机构结算审核',children:[]}]}]},{id:'personnel',label:'人员管理',children:[{id:'org-mgmt',label:'机构管理',children:[]},{id:'position-mgmt',label:'岗位管理',children:[]},{id:'user-mgmt',label:'用户管理',children:[]}]},{id:'system',label:'系统管理',children:[{id:'game-config',label:'游戏设置',children:[{id:'game-config-attr',label:'游戏配置',children:[]}]},{id:'service-type-mgmt',label:'服务类型',children:[{id:'service-type-config',label:'服务类型配置',children:[]}]},{id:'permission-mgmt',label:'权限管理',children:[{id:'permission-matrix',label:'权限矩阵配置',children:[]}]}]}];
+var tempPerms={};
+function rPermissionMgmt(){
+  var h='<div style="margin-bottom:16px;"><button class="ant-btn ant-btn-primary" onclick="openRoleEdit(true)">+ 添加角色</button></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>编码</th><th>名称</th><th>内置角色</th><th>状态</th><th>描述</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+  roleList.forEach(function(r){
+    var st=r.status?'<span class="ant-tag ant-tag-success">启用</span>':'<span class="ant-tag ant-tag-default">禁用</span>';
+    h+='<tr><td>'+r.code+'</td><td style="font-weight:500;">'+r.name+'</td><td><span class="ant-tag ant-tag-'+(r.builtin?'success':'default')+'">'+(r.builtin?'是':'否')+'</span></td><td>'+st+'</td><td>'+r.desc+'</td><td>'+r.time+'</td><td style="white-space:nowrap;"><button class="ant-btn ant-btn-sm" onclick="openRoleEdit(false,\''+r.code+'\')">编辑</button>'+(!r.builtin?' <button class="ant-btn ant-btn-sm '+(r.status?'ant-btn-danger':'ant-btn-success')+'" onclick="toggleRoleStatus(\''+r.code+'\')">'+(r.status?'禁用':'启用')+'</button> <button class="ant-btn ant-btn-danger ant-btn-sm" onclick="deleteRole(\''+r.code+'\')">删除</button>':'')+'</td></tr>';
+  });
+  h+='</tbody></table></div></div></div>';
+  return h;
+}
+function renderPermTreeHTML(node,depth){
+  var hasChildren=node.children&&node.children.length>0;
+  var allChecked=true,someChecked=false;
+  if(hasChildren){
+    node.children.forEach(function(c){
+      var cv=permNodeChecked(c);
+      if(cv) someChecked=true;
+      if(cv!==2) allChecked=false;
+    });
+  }
+  var selfChecked=permNodeChecked(node);
+  var checked=selfChecked===2?' checked':'';
+  var indeterminate=(!allChecked&&someChecked)?' indeterminate':'';
+  var h='';
+  if(depth===1){
+    h+='<div class="perm-group" style="margin-bottom:4px;">';
+    h+='<div class="perm-group-hd" onclick="var p=this.parentNode;var b=p.querySelector(\'.perm-group-bd\');var arr=p.querySelector(\'.perm-arr\');if(b.style.display===\'none\'){b.style.display=\'\';arr.textContent=\'\u25bc\'}else{b.style.display=\'none\';arr.textContent=\'\u25b6\'}" style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg);border-radius:4px;cursor:pointer;user-select:none;font-weight:500;"><span class="perm-arr" style="font-size:10px;width:14px;">▼</span><label style="cursor:pointer;display:flex;align-items:center;gap:4px;" onclick="event.stopPropagation();"><input type="checkbox" class="perm-cb perm-parent" data-id="'+node.id+'" onchange="onPermParentChange(this)"'+checked+indeterminate+'> '+node.label+'</label></div>';
+    h+='<div class="perm-group-bd" style="padding-left:24px;">';
+  }else if(depth===2){
+    if(hasChildren){
+      h+='<div class="perm-subgroup" style="margin-bottom:2px;">';
+      h+='<div class="perm-subgroup-hd" onclick="var p=this.parentNode;var b=p.querySelector(\'.perm-subgroup-bd\');var arr=p.querySelector(\'.perm-arr\');if(b.style.display===\'none\'){b.style.display=\'\';arr.textContent=\'\u25bc\'}else{b.style.display=\'none\';arr.textContent=\'\u25b6\'}" style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:pointer;user-select:none;border-radius:2px;"><span class="perm-arr" style="font-size:10px;width:14px;">▼</span><label style="cursor:pointer;display:flex;align-items:center;gap:4px;" onclick="event.stopPropagation();"><input type="checkbox" class="perm-cb perm-parent" data-id="'+node.id+'" onchange="onPermParentChange(this)"'+checked+indeterminate+'> '+node.label+'</label></div>';
+      h+='<div class="perm-subgroup-bd" style="padding-left:24px;">';
+    }else{
+      h+='<div style="padding:4px 6px 4px 26px;display:flex;align-items:center;gap:4px;"><label style="cursor:pointer;"><input type="checkbox" class="perm-cb perm-leaf" data-id="'+node.id+'" onchange="onPermLeafChange(this)"'+checked+'> '+node.label+'</label></div>';
+    }
+  }else{
+    h+='<div style="padding:3px 6px 3px 24px;display:flex;align-items:center;gap:4px;"><label style="cursor:pointer;font-size:13px;"><input type="checkbox" class="perm-cb perm-leaf" data-id="'+node.id+'" onchange="onPermLeafChange(this)"'+checked+'> '+node.label+'</label></div>';
+  }
+  if(hasChildren){
+    node.children.forEach(function(c){h+=renderPermTreeHTML(c,depth+1);});
+  }
+  if(depth===1){h+='</div></div>';}
+  else if(depth===2&&hasChildren){h+='</div></div>';}
+  return h;
+}
+function buildPermTreeHTML(){
+  var h='<div style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:8px;">';
+  permTreeData.forEach(function(node){h+=renderPermTreeHTML(node,1);});
+  h+='</div>';
+  return h;
+}
+function permNodeChecked(node){
+  if(node.children&&node.children.length){
+    var all=true,some=false;
+    node.children.forEach(function(c){
+      var cv=permNodeChecked(c);
+      if(cv) some=true;
+      if(cv!==2) all=false;
+    });
+    return all?2:(some?1:0);
+  }
+  return tempPerms[node.id]?2:0;
+}
+function onPermParentChange(cb){
+  var id=cb.dataset.id;
+  var val=cb.checked;
+  setDescendants(permTreeData,id,val);
+  refreshPermTree();
+  function setDescendants(nodes,targetId,val){
+    nodes.forEach(function(n){
+      if(n.id===targetId){setAll(n,val);return;}
+      if(n.children) setDescendants(n.children,targetId,val);
+    });
+  }
+  function setAll(node,val){
+    if(!node.children||!node.children.length){tempPerms[node.id]=val?1:0;return;}
+    node.children.forEach(function(c){setAll(c,val);});
+  }
+}
+function onPermLeafChange(cb){
+  tempPerms[cb.dataset.id]=cb.checked?1:0;
+  refreshPermTree();
+}
+function refreshPermTree(){
+  var container=document.getElementById('perm-tree-container');
+  if(container) container.innerHTML=buildPermTreeHTML();
+}
+function collectPerms(){
+  var perms={};
+  collectLeafPerms(permTreeData);
+  function collectLeafPerms(nodes){
+    nodes.forEach(function(n){
+      if(n.children&&n.children.length){collectLeafPerms(n.children);}
+      else{perms[n.id]=tempPerms[n.id]?1:0;}
+    });
+  }
+  return perms;
+}
+function openRoleEdit(isNew,code){
+  var r=null;
+  if(!isNew){r=roleList.find(function(x){return x.code===code;});if(!r)return;}
+  var title=isNew?'添加角色':'编辑角色 - '+(r?r.name:'');
+  var name=r?r.name:'',rcode=r?r.code:'',desc=r?r.desc:'',rstatus=r?r.status:1;
+  tempPerms={};
+  if(r&&r.perms){Object.keys(r.perms).forEach(function(k){tempPerms[k]=r.perms[k];});}
+  var body='<div class="ant-row"><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>角色名称</div><input class="ant-input" id="reName" value="'+name+'" placeholder="请输入角色名称"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>角色编码</div><input class="ant-input" id="reCode" value="'+rcode+'" placeholder="请输入角色编码（唯一）"'+(isNew?'':' readonly style="background:#f5f5f5"')+'></div></div><div class="ant-form-item"><div class="ant-form-label">描述</div><textarea class="ant-input" id="reDesc" placeholder="请简要描述该角色" rows="2">'+desc+'</textarea></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>角色权限</div><div id="perm-tree-container">'+buildPermTreeHTML()+'</div></div><div class="ant-form-item"><div class="ant-form-label">状态</div><div style="padding:8px 0;"><label style="display:inline-flex;align-items:center;gap:4px;margin-right:24px;cursor:pointer;"><input type="radio" name="reStatus" value="1"'+(rstatus===1?' checked':'')+'> 启用</label><label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="reStatus" value="0"'+(rstatus===0?' checked':'')+'> 禁用</label></div></div>';
+  var footer='<button class="ant-btn" onclick="closeModal()">取消</button><button class="ant-btn ant-btn-primary" onclick="'+(isNew?'saveNewRole()':'saveEditRole(\''+code+'\')')+'">保存</button>';
+  openModal(title,body,footer);
+}
+function saveNewRole(){
+  var name=document.getElementById('reName').value.trim();
+  var code=document.getElementById('reCode').value.trim();
+  var desc=document.getElementById('reDesc').value.trim();
+  if(!name) return toast('请输入<span style="color:var(--danger);">角色名称</span>');
+  if(!code) return toast('请输入<span style="color:var(--danger);">角色编码</span>');
+  if(roleList.some(function(x){return x.code===code;})) return toast('角色编码 <span style="color:var(--danger);">'+code+'</span> 已存在，请更换');
+  var statusEl=document.querySelector('input[name="reStatus"]:checked');
+  var st=statusEl?parseInt(statusEl.value):1;
+  var perms=collectPerms();
+  roleList.push({code:code,name:name,builtin:false,status:st,desc:desc||'-',time:new Date().toISOString().slice(0,10),perms:perms});
+  closeModal();toast('角色 <span style="color:var(--danger);">'+name+'</span> 添加成功');renderContent();
+}
+function saveEditRole(code){
+  var name=document.getElementById('reName').value.trim();
+  var desc=document.getElementById('reDesc').value.trim();
+  if(!name) return toast('请输入<span style="color:var(--danger);">角色名称</span>');
+  var r=roleList.find(function(x){return x.code===code;});if(!r)return;
+  var statusEl=document.querySelector('input[name="reStatus"]:checked');
+  r.name=name;r.desc=desc||'-';r.status=statusEl?parseInt(statusEl.value):1;r.perms=collectPerms();
+  closeModal();toast('角色 <span style="color:var(--danger);">'+name+'</span> 已更新');renderContent();
+}
+function toggleRoleStatus(code){
+  var r=roleList.find(function(x){return x.code===code;});if(!r)return;
+  r.status=r.status?0:1;
+  toast('角色 <span style="color:var(--danger);">'+r.name+'</span> 已'+(r.status?'启用':'禁用'));
+  renderContent();
+}
+function deleteRole(code){
+  var r=roleList.find(function(x){return x.code===code;});if(!r)return;
+  if(r.builtin) return toast('内置角色不可删除');
+  roleList=roleList.filter(function(x){return x.code!==code;});
+  toast('角色 <span style="color:var(--danger);">'+r.name+'</span> 已删除');renderContent();
+}
+
 
 // ── 个人中心 ──
-var profile={uid:'U20260527001',name:'张运营',phone:'138****8888',email:'zhangyy@example.com',alipayName:'张运',alipayIdCard:'3201**********1234',alipayAccount:'138****8888',alipayBound:true};
+var profile={uid:'U20260527001',name:'张运营',phone:'138****8888',email:'zhangyy@example.com',realName:'张运',realIdCard:'3201**********1234',realVerified:true,alipayName:'张运',alipayIdCard:'3201**********1234',alipayAccount:'138****8888',alipayBound:true};
 
 function openProfileCenter(){
   var h='';
@@ -1052,7 +1289,15 @@ function openProfileCenter(){
 
   h+='<div class="bind-item"><div class="bind-info"><div class="bind-label">手机号</div><div class="bind-val">'+profile.phone+'</div></div><div class="bind-action"><button class="ant-btn ant-btn-sm" onclick="openBindPhone()">更换绑定</button></div></div>';
   h+='<div class="bind-item"><div class="bind-info"><div class="bind-label">邮箱</div><div class="bind-val">'+profile.email+'</div></div><div class="bind-action"><button class="ant-btn ant-btn-sm" onclick="openBindEmail()">更换绑定</button></div></div>';
-  h+='<div class="bind-item"><div class="bind-info"><div class="bind-label">登录密码</div><div class="bind-val">建议定期更换密码以保证账户安全</div></div><div class="bind-action"><button class="ant-btn ant-btn-sm" onclick="openChangePwd()">修改密码</button></div></div>';
+
+  h+='<div style="margin:20px 0;border-top:1px solid var(--border-light);"></div>';
+
+  // 实名认证
+  if(profile.realVerified){
+    h+='<div class="bind-item"><div class="bind-info"><div class="bind-label">实名认证 <span style="font-size:11px;color:var(--success);">✓ 已认证</span></div><div class="bind-val">真实姓名：'+profile.realName+'</div><div class="bind-val">身份证号：'+profile.realIdCard+'</div></div><div class="bind-action"><span style="color:var(--text-tertiary);font-size:12px;">已认证</span></div></div>';
+  }else{
+    h+='<div class="bind-item"><div class="bind-info"><div class="bind-label">实名认证 <span style="font-size:11px;color:var(--danger);">未认证</span></div><div class="bind-val" style="color:var(--text-tertiary);">为保障账户安全和提现功能，请完成实名认证</div></div><div class="bind-action"><button class="ant-btn ant-btn-primary ant-btn-sm" onclick="openVerifyIdentity()">去认证</button></div></div>';
+  }
 
   h+='<div style="margin:20px 0;border-top:1px solid var(--border-light);"></div>';
 
@@ -1063,6 +1308,25 @@ function openProfileCenter(){
   }
 
   openModal('个人中心',h,'<button class="ant-btn" onclick="closeModal()">关闭</button>');
+}
+
+function openVerifyIdentity(){
+  var body='<div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>真实姓名</div><input class="ant-input" id="verifyName" placeholder="请输入身份证姓名"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>身份证号</div><input class="ant-input" id="verifyIdCard" placeholder="请输入18位身份证号"></div><div class="ant-form-item"><div class="ant-form-label"><span class="req">*</span>手机验证码</div><div style="display:flex;gap:8px;"><input class="ant-input" id="verifyCode" placeholder="请输入验证码" style="flex:1;"><button class="ant-btn" onclick="toast(\'验证码已发送至 '+profile.phone+'\')">获取验证码</button></div></div>';
+  openModal('🔒 实名认证',body,'<button class="ant-btn" onclick="closeModal()">取消</button><button class="ant-btn ant-btn-primary" onclick="confirmVerifyIdentity()">提交认证</button>');
+}
+function confirmVerifyIdentity(){
+  var n=document.getElementById('verifyName').value.trim();
+  var id=document.getElementById('verifyIdCard').value.trim();
+  var code=document.getElementById('verifyCode').value.trim();
+  if(!n) return toast('请输入真实姓名');
+  if(!id||id.length!==18) return toast('请输入正确的18位身份证号');
+  if(!code||code!=='8888') return toast('验证码错误');
+  profile.realName=n;
+  profile.realIdCard=id.replace(/(\d{4})\d{10}(\d{4})/,'$1**********$2');
+  profile.realVerified=true;
+  toast('✓ 实名认证成功');
+  closeModal();
+  openProfileCenter();
 }
 
 function openBindPhone(){
@@ -1091,20 +1355,6 @@ function confirmBindEmail(){
   toast('邮箱已更换');
   closeModal();
   openProfileCenter();
-}
-
-function openChangePwd(){
-  var body='<div class="ant-form-item"><div class="ant-form-label">原密码</div><input class="ant-input" type="password" id="oldPwd" placeholder="请输入原密码"></div><div class="ant-form-item"><div class="ant-form-label">新密码</div><input class="ant-input" type="password" id="newPwd" placeholder="请输入新密码"></div><div class="ant-form-item"><div class="ant-form-label">确认新密码</div><input class="ant-input" type="password" id="confirmPwd" placeholder="请再次输入新密码"></div>';
-  openModal('修改登录密码',body,'<button class="ant-btn" onclick="closeModal()">取消</button><button class="ant-btn ant-btn-primary" onclick="confirmChangePwd()">确认修改</button>');
-}
-
-function confirmChangePwd(){
-  var np=document.getElementById('newPwd').value;
-  var cp=document.getElementById('confirmPwd').value;
-  if(!np){toast('请输入新密码');return;}
-  if(np!==cp){toast('两次输入的密码不一致');return;}
-  toast('密码修改成功');
-  closeModal();
 }
 
 function openBindAlipay(){
