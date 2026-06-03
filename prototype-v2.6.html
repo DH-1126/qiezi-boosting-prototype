@@ -11,8 +11,8 @@
   <h1>茄子代练</h1>
   <div class="sub">工作室SAAS管理平台</div>
   <div class="login-form">
-    <div class="login-field"><input class="login-input" id="login-phone" type="tel" maxlength="11" placeholder="请输入手机号" autocomplete="off"><div class="login-hint" onclick="document.getElementById('login-phone').value='13800008888'" title="点击填入演示账号">📱 13800008888（点击填入）</div></div>
-    <div class="login-field" style="display:flex;gap:8px;"><input class="login-input" id="login-code" type="text" maxlength="4" placeholder="请输入验证码" autocomplete="off" style="flex:1;"><button class="login-sms-btn" id="login-sms-btn" onclick="sendLoginSms()">获取验证码</button></div><div class="login-hint" onclick="document.getElementById('login-code').value='8888'" title="点击填入演示验证码" style="margin-top:4px;">🔑 验证码：8888（点击填入）</div>
+    <div class="login-field"><input class="login-input" id="login-acct" type="text" placeholder="请输入账号" autocomplete="off"><div class="login-hint" onclick="document.getElementById('login-acct').value='zhang_hz';document.getElementById('login-pwd').value='123456'" title="点击填入演示账号">👤 zhang_hz / 123456（点击填入）</div></div>
+    <div class="login-field"><input class="login-input" id="login-pwd" type="password" placeholder="请输入密码" autocomplete="off"></div>
     <div class="login-field"><button class="login-btn" onclick="doLogin()">登录</button></div>
   </div>
 </div>
@@ -24,12 +24,11 @@
 <div class="main-wrap">
   <div class="topbar">
     <div class="breadcrumb" id="breadcrumb">工作台 / <span>首页</span></div>
-    <div class="right"><a class="link" onclick="openProfileCenter()" style="font-size:var(--font-size);">👤 个人中心</a> &nbsp;|&nbsp; 2026-05-26 &nbsp;|&nbsp; <span id="top-role" class="role-badge op">平台运营</span></div>
+    <div class="right"><a class="link" onclick="openProfileCenter()" style="font-size:var(--font-size);">👤 个人中心</a> &nbsp;|&nbsp; 2026-05-26 &nbsp;|&nbsp; <span id="top-role" class="role-badge admin">👑 平台管理员</span> <a class="link" id="role-switch-btn" onclick="toggleRolePanel()" style="font-size:var(--font-size);cursor:pointer;" title="切换角色">🔄</a></div>
   </div>
   <div class="content" id="content-area"></div>
 </div>
 <div class="ant-toast" id="toast"></div>
-<div class="floating-ball" id="floating-ball" onclick="toggleRolePanel()" title="切换角色">🔄</div>
 <div class="role-panel" id="role-panel">
   <div class="rp-header">切换角色视角</div>
   <div class="rp-body" id="role-list"></div>
@@ -37,6 +36,7 @@
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal-box" id="modal-box"></div>
 </div>
+<div class="iter-float-btn" id="iter-float-btn" onclick="openIterRecords()" title="查看迭代记录">📋</div>
 <script src="prototype-v2.6.js"></script>
 </body>
 </html>
