@@ -1,8 +1,27 @@
 [
   {
+    "version": "v3.5",
+    "date": "2026.06.22",
+    "status": "已发布",
+    "changes": [
+      {
+        "type": "修复",
+        "content": "订单管理表格：修复联系方式/类型字段与内容错位（r.cs已删除→r.src→来源，r.contact→联系方式，r.type→类型）"
+      },
+      {
+        "type": "新增",
+        "content": "订单管理表格：新增「创建人」列，所有订单数据补充creator字段"
+      },
+      {
+        "type": "新增",
+        "content": "订单流水表格：新增「创建人」列，流水数据同步补充creator字段"
+      }
+    ]
+  },
+  {
     "version": "v3.4",
     "date": "2026.06.17",
-    "status": "开发中",
+    "status": "已发布",
     "changes": []
   },
   {
