@@ -480,7 +480,7 @@ function rPlatformAssets(){
   h+='<div style="display:flex;gap:16px;margin-bottom:24px;"><div class="ant-card" style="flex:1;"><div class="ant-card-head">📈 平台流水概览</div><div class="ant-card-body" style="padding:16px;"><div style="display:flex;gap:24px;"><div style="flex:1;text-align:center;padding:16px;background:var(--primary-light);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--primary);">¥52,600</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">本月流水</div></div><div style="flex:1;text-align:center;padding:16px;background:var(--success-light);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--success);">¥16,240</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">本月结算</div></div><div style="flex:1;text-align:center;padding:16px;background:var(--warning-light);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--warning);">¥8,750</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">待打款</div></div><div style="flex:1;text-align:center;padding:16px;background:var(--bg);border-radius:var(--radius);"><div style="font-size:24px;font-weight:700;color:var(--text);">¥98,200</div><div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">平台收入</div></div></div></div></div><div class="ant-card" style="flex:1;"><div class="ant-card-head">💰 结算状态分布</div><div class="ant-card-body" style="padding:16px;"><div style="display:flex;gap:16px;"><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--primary);">128</div><div style="font-size:12px;color:var(--text-secondary);">已完成订单</div></div><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--warning);">28</div><div style="font-size:12px;color:var(--text-secondary);">待结算订单</div></div><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--success);">5</div><div style="font-size:12px;color:var(--text-secondary);">已打款笔数</div></div><div style="flex:1;text-align:center;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius);"><div style="font-size:20px;font-weight:600;color:var(--danger);">2</div><div style="font-size:12px;color:var(--text-secondary);">待打款笔数</div></div></div></div></div></div>';
 
   // Top stat cards
-  h+='<div class="stat-row"><div class="stat-item"><div class="label">平台总资产</div><div class="value" style="color:var(--primary);">¥'+totalAssets.toLocaleString()+'.00</div></div><div class="stat-item"><div class="label">机构余额合计</div><div class="value" style="color:var(--success);">¥'+totalBalance.toLocaleString()+'.00</div></div><div class="stat-item"><div class="label">待结算总额</div><div class="value" style="color:var(--warning);">¥'+totalPending.toLocaleString()+'.00</div></div><div class="stat-item"><div class="label">已结算总额</div><div class="value">¥'+totalSettled.toLocaleString()+'.00</div></div></div>';
+  h+='<div class="stat-row"><div class="stat-item"><div class="label">机构余额合计</div><div class="value" style="color:var(--success);">¥'+totalBalance.toLocaleString()+'.00</div></div><div class="stat-item"><div class="label">待结算总额</div><div class="value" style="color:var(--warning);">¥'+totalPending.toLocaleString()+'.00</div></div><div class="stat-item"><div class="label">已结算总额</div><div class="value">¥'+totalSettled.toLocaleString()+'.00</div></div></div>';
 
   // Guild asset table
   h+='<div class="ant-card"><div class="ant-card-head">🏛️ 机构资产明细</div><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th>机构名称</th><th>管理员</th><th>联系方式</th><th>资产余额</th><th>待结算</th><th>已结算</th><th>总资产</th><th>执行中订单</th><th>代练人数</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
@@ -1057,17 +1057,18 @@ function togglePosStatus(pcode){
 }
 
 // ── 用户管理 ──
-var userList=[{uid:'U20260527001',name:'王代练',tel:'138xxxx1234',guild:'三角洲机构A组',pos:'代练',acct:'wang_dl',password:'123456'},{uid:'U20260527002',name:'刘代练',tel:'139xxxx5678',guild:'三角洲机构A组',pos:'代练',acct:'liu_dl',password:'123456'},{uid:'U20260527003',name:'陈代练',tel:'137xxxx9012',guild:'-',pos:'代练',acct:'chen_dl',password:'123456'},{uid:'U20260527004',name:'赵代练',tel:'136xxxx3456',guild:'三角洲机构A组',pos:'代练',acct:'zhao_dl',password:'123456'},{uid:'U20260527005',name:'孙代练',tel:'135xxxx7890',guild:'三角洲机构B组',pos:'代练',acct:'sun_dl',password:'123456'},{uid:'U20260527006',name:'张会长',tel:'138xxxx1111',guild:'三角洲机构A组',pos:'会长',acct:'zhang_hz',password:'123456'},{uid:'U20260527007',name:'小李',tel:'139xxxx0001',guild:'-',pos:'客服',acct:'li_xiaomei',password:'123456'},{uid:'U20260527008',name:'小周',tel:'139xxxx0002',guild:'-',pos:'运营',acct:'zhou_xiao',password:'123456'}];
+var userList=[{uid:'U20260527001',name:'王代练',tel:'138xxxx1234',guild:'三角洲机构A组',pos:'代练',acct:'wang_dl',password:'123456',status:true},{uid:'U20260527002',name:'刘代练',tel:'139xxxx5678',guild:'三角洲机构A组',pos:'代练',acct:'liu_dl',password:'123456',status:true},{uid:'U20260527003',name:'陈代练',tel:'137xxxx9012',guild:'-',pos:'代练',acct:'chen_dl',password:'123456',status:true},{uid:'U20260527004',name:'赵代练',tel:'136xxxx3456',guild:'三角洲机构A组',pos:'代练',acct:'zhao_dl',password:'123456',status:true},{uid:'U20260527005',name:'孙代练',tel:'135xxxx7890',guild:'三角洲机构B组',pos:'代练',acct:'sun_dl',password:'123456',status:true},{uid:'U20260527006',name:'张会长',tel:'138xxxx1111',guild:'三角洲机构A组',pos:'会长',acct:'zhang_hz',password:'123456',status:true},{uid:'U20260527007',name:'小李',tel:'139xxxx0001',guild:'-',pos:'客服',acct:'li_xiaomei',password:'123456',status:true},{uid:'U20260527008',name:'小周',tel:'139xxxx0002',guild:'-',pos:'运营',acct:'zhou_xiao',password:'123456',status:true}];
 var userNextId=9;
 function rUserMgmt(){
-  var h='<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><div style="display:flex;gap:8px;"><button class="ant-btn ant-btn-primary" onclick="openUserEdit(true)">+ 添加用户</button></div><div style="display:flex;gap:8px;"><select class="ant-input" style="width:150px;" id="uFilterOrg"><option value="">全部组织</option><option value="平台">平台</option><option value="三角洲机构A组">三角洲机构A组</option><option value="三角洲机构B组">三角洲机构B组</option></select><input class="ant-input" style="width:180px;" placeholder="搜索姓名/手机号/编号..." id="uFilterKw" oninput="renderContent()"></div></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th style="width:140px;">操作</th><th>用户编号</th><th>用户姓名</th><th>手机号</th><th>机构</th><th>岗位</th></tr></thead><tbody>';
+  var h='<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><div style="display:flex;gap:8px;"><button class="ant-btn ant-btn-primary" onclick="openUserEdit(true)">+ 添加用户</button></div><div style="display:flex;gap:8px;"><select class="ant-input" style="width:150px;" id="uFilterOrg"><option value="">全部组织</option><option value="平台">平台</option><option value="三角洲机构A组">三角洲机构A组</option><option value="三角洲机构B组">三角洲机构B组</option></select><input class="ant-input" style="width:180px;" placeholder="搜索姓名/手机号/编号..." id="uFilterKw" oninput="renderContent()"></div></div><div class="ant-card"><div class="ant-card-body np"><div class="ant-table-wrap"><table class="ant-table"><thead><tr><th style="width:140px;">操作</th><th>用户编号</th><th>用户姓名</th><th>手机号</th><th>机构</th><th>岗位</th><th>状态</th></tr></thead><tbody>';
   var orgEl=document.getElementById('uFilterOrg'); var orgVal=orgEl?orgEl.value:'';
   var kwEl=document.getElementById('uFilterKw'); var kwVal=kwEl?kwEl.value.toLowerCase()||'':'';
   userList.forEach(function(u){
     if(orgVal&&u.guild!==orgVal) return;
     if(kwVal&&u.uid.toLowerCase().indexOf(kwVal)===-1&&u.name.toLowerCase().indexOf(kwVal)===-1&&u.tel.indexOf(kwVal)===-1) return;
     var gd=u.guild==='-'?'-':'<span class="ant-tag ant-tag-purple">'+u.guild+'</span>';
-    h+='<tr><td style="white-space:nowrap;"><button class="ant-btn ant-btn-sm" onclick="openUserEdit(false,\''+u.uid+'\')">编辑</button> <button class="ant-btn ant-btn-sm" style="background:var(--warning);color:#fff;border-color:var(--warning);" onclick="openResetPassword(\''+u.uid+'\')">重置密码</button> <button class="ant-btn ant-btn-sm ant-btn-danger" onclick="deleteUser(\''+u.uid+'\')">删除</button></td><td style="font-weight:500;">'+u.uid+'</td><td>'+u.name+'</td><td>'+u.tel+'</td><td>'+gd+'</td><td>'+u.pos+'</td></tr>';
+    var ust=u.status!==false?'<span class="ant-tag ant-tag-success">启用</span>':'<span class="ant-tag ant-tag-default">禁用</span>';
+    h+='<tr'+(u.status===false?' style="opacity:0.5;"':'')+'><td style="white-space:nowrap;"><button class="ant-btn ant-btn-sm" onclick="openUserEdit(false,\''+u.uid+'\')">编辑</button> <button class="ant-btn ant-btn-sm" style="background:var(--warning);color:#fff;border-color:var(--warning);" onclick="openResetPassword(\''+u.uid+'\')">重置密码</button> <button class="ant-btn ant-btn-sm '+(u.status!==false?'ant-btn-danger':'ant-btn-success')+'" onclick="toggleUserStatus(\''+u.uid+'\')">'+(u.status!==false?'禁用':'启用')+'</button></td><td style="font-weight:500;">'+u.uid+'</td><td>'+u.name+'</td><td>'+u.tel+'</td><td>'+gd+'</td><td>'+u.pos+'</td><td>'+ust+'</td></tr>';
   });
   h+='</tbody></table></div></div></div>';
   return h;
@@ -1127,7 +1128,7 @@ function saveNewUser(){
   if(!name) return toast('请输入<span style="color:var(--danger);">用户姓名</span>');
   var uid='U'+new Date().toISOString().slice(0,10).replace(/-/g,'')+String(userNextId).padStart(3,'0');
   userNextId++;
-  userList.push({uid:uid,name:name,tel:tel||'-',guild:guild||'-',pos:pos||'-',acct:acct,password:'123456'});
+  userList.push({uid:uid,name:name,tel:tel||'-',guild:guild||'-',pos:pos||'-',acct:acct,password:'123456',status:true});
   closeModal();
   toast('用户 <span style="color:var(--danger);">'+name+'</span> 添加成功，编号 '+uid+'，默认密码 123456');
   renderContent();
@@ -1145,16 +1146,11 @@ function saveEditUser(uid){
   toast('用户 <span style="color:var(--danger);">'+name+'</span> 信息已更新');
   renderContent();
 }
-function deleteUser(uid){
+function toggleUserStatus(uid){
   var u=userList.find(function(x){return x.uid===uid;});
   if(!u) return;
-  var body='<p>确认删除用户 <strong>'+u.name+'</strong>（'+uid+'）吗？此操作不可撤销。</p>';
-  openModal('删除用户',body,'<button class="ant-btn" onclick="closeModal()">取消</button><button class="ant-btn ant-btn-danger" id="confirmDelBtn" onclick="confirmDeleteUser(\''+uid+'\')">确认删除</button>');
-}
-function confirmDeleteUser(uid){
-  userList=userList.filter(function(x){return x.uid!==uid;});
-  closeModal();
-  toast('用户已<span style="color:var(--danger);">删除</span>');
+  u.status=!u.status;
+  toast('用户 <span style="color:var(--danger);">'+u.name+'</span> 已'+(u.status?'启用':'禁用'));
   renderContent();
 }
 function openResetPassword(uid){
